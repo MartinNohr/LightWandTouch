@@ -10,11 +10,12 @@
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_STMPE610.h>
 
- // This is calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 380
-#define TS_MINY 310
-#define TS_MAXX 3500
-#define TS_MAXY 3700
+// This is calibration data for the raw touch data to the screen coordinates
+// since we rotated the screen these reverse x and y
+#define TS_MINX 314
+#define TS_MINY 272
+#define TS_MAXX 3746
+#define TS_MAXY 3823
 
 // The STMPE610 uses hardware SPI on the shield, and #8
 #define STMPE_CS 8
@@ -62,9 +63,13 @@ void setup(void) {
         while (1);
     }
     Serial.println("Touchscreen started");
-
     tft.fillScreen(ILI9341_BLACK);
+    //Serial.println(tft.width());
+    //Serial.println(tft.height());
     tft.setRotation(1);
+    //Serial.println(tft.width());
+    //Serial.println(tft.height());
+#if !CALIBRATE
     tft.setTextSize(3);
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
@@ -86,12 +91,13 @@ void setup(void) {
     //}
     delay(500);
     ShowMenu(MainMenu);
+#endif
 }
 
 
 void loop()
 {
-#if (!CALIBRATE)
+#if !CALIBRATE
     // See if there's any  touch data for us
     //if (ts.bufferEmpty()) {
     //    return;
@@ -119,26 +125,42 @@ void loop()
         Serial.println(")");
     }
 #else
-    // You can also wait for a touch
+    tft.fillCircle(5, 5, 5, ILI9341_WHITE);
+    tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
+    tft.fillCircle(tft.width() - 1 - 5, tft.height() - 1 - 5, 5, ILI9341_WHITE);
+    tft.fillCircle(5, tft.height() - 1 - 5, 5, ILI9341_WHITE);
     if (!ts.touched()) {
         return;
     }
+    ReadTouch();
+#endif
+}
+
+TS_Point ReadTouch()
+{
     // Retrieve a point  
     TS_Point p = ts.getPoint();
 
+    while (p.z < 20 || p.z > 250) {
+        p = ts.getPoint();
+    }
     Serial.print("X = "); Serial.print(p.x);
     Serial.print("\tY = "); Serial.print(p.y);
     Serial.print("\tPressure = "); Serial.println(p.z);
     // Scale from ~0->4000 to tft.width using the calibration #'s
-    p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-    p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
+    int x, y;
+    x = map(p.y, TS_MINY, TS_MAXY, 0, tft.width());
+    y = map(p.x, TS_MINX, TS_MAXX, 0, tft.height());
 
-    Serial.print("("); Serial.print(p.x);
-    Serial.print(", "); Serial.print(p.y);
+    Serial.print("("); Serial.print(x);
+    Serial.print(", "); Serial.print(y);
     Serial.println(")");
     while (ts.touched())
         ;
-#endif
+    ts.getPoint();
+    p.x = x;
+    p.y = y;
+    return p;
 }
 
 void ShowMenu(struct MenuItem* menu)
@@ -169,9 +191,9 @@ void ShowMenu(struct MenuItem* menu)
 
 void EnterBrightness()
 {
+    bool firstdigit = false;
     int newbright = brightness;
     bool done = false;
-    int x, y;
     int cursex;
     int cursey;
     // wait for no fingers
@@ -196,44 +218,28 @@ void EnterBrightness()
     tft.print("OK CANCEL");
     TS_Point p;
     while (!done) {
-        while (!ts.touched())
-            ;
-        while (ts.touched()) {
-            p = ts.getPoint();
-            if (p.z > 10 && p.z < 255) {
-                y = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-                x = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-
-                Serial.print("("); Serial.print(x);
-                Serial.print(", "); Serial.print(y);
-                Serial.print(", "); Serial.print(p.z);
-                Serial.println(")");
-            }
-        }
-        Serial.print(x);
+        p = ReadTouch();
+        Serial.print(p.x);
         Serial.print(" ");
-        Serial.println(y);
-        // wait for finger removal
-        while (ts.touched())
-            ;
-        if (x > 30 && y > 30) {
+        Serial.println(p.y);
+        if (p.x > 30 && p.y > 30) {
             ++newbright;
             tft.setTextSize(2);
             tft.setCursor(cursex, cursey);
             tft.print(newbright);
         }
-        if (x < 30 && y > 30) {
+        if (p.x < 30 && p.y > 30) {
             --newbright;
             tft.setTextSize(2);
             tft.setCursor(cursex, cursey);
             tft.print(newbright);
         }
-        if (x < 30 && y < 30) {
+        if (p.x < 30 && p.y < 30) {
             Serial.println("leaving now");
             brightness = constrain(newbright, 1, 100);
             done = true;
         }
-        if (x > 30 && y < 30) {
+        if (p.x > 30 && p.y < 30) {
             done = true;
         }
     }
