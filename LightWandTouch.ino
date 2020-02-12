@@ -109,21 +109,10 @@ void loop()
     EnterBrightness();
     ShowMenu(MainMenu);
     // Retrieve a point  
-    TS_Point p = ts.getPoint();
-    if (p.z > 10) {
-
-        //Serial.print("X = "); Serial.print(p.x);
-        //Serial.print("\tY = "); Serial.print(p.y);
-        //Serial.print("\tPressure = "); Serial.println(p.z);
-
-        // Scale from ~0->4000 to tft.width using the calibration #'s
-        p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-        p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-
-        Serial.print("("); Serial.print(p.x);
-        Serial.print(", "); Serial.print(p.y);
-        Serial.println(")");
-    }
+//    TS_Point p = ReadTouch(false);
+    //Serial.print("("); Serial.print(p.x);
+    //Serial.print(", "); Serial.print(p.y);
+    //Serial.println(")");
 #else
     tft.fillCircle(5, 5, 5, ILI9341_WHITE);
     tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
@@ -132,16 +121,21 @@ void loop()
     if (!ts.touched()) {
         return;
     }
-    ReadTouch();
+    ReadTouch(true);
 #endif
 }
 
-TS_Point ReadTouch()
+TS_Point ReadTouch(bool wait)
 {
+    if (wait) {
+        while (!ts.touched())
+            ;
+    }
+    delay(10);
     // Retrieve a point  
     TS_Point p = ts.getPoint();
 
-    while (p.z < 20 || p.z > 250) {
+    while (p.z < 20 || p.z > 250 || p.y < 100 || p.x < 100) {
         p = ts.getPoint();
     }
     Serial.print("X = "); Serial.print(p.x);
@@ -191,22 +185,40 @@ void ShowMenu(struct MenuItem* menu)
 
 void EnterBrightness()
 {
-    bool firstdigit = false;
-    int newbright = brightness;
+    String result = String(brightness);
+    struct NumRange {
+        int x;
+        int dx;
+        int y;
+        int dy;
+    };
+    struct NumRange numranges[10] = {
+        {65,12,67,20},  // 0
+        {25,12,112,20}, // 1
+        {65,12,112,20}, // 2
+        {128,12,112,20},// 3
+        {25,12,158,20}, // 4
+        {65,12,158,20}, // 5
+        {128,12,158,20},// 6
+        {25,12,198,20}, // 7
+        {65,12,198,20}, // 8
+        {128,12,198,20},// 9
+    };
+    bool firstdigit = true;
     bool done = false;
     int cursex;
     int cursey;
     // wait for no fingers
     while (ts.touched())
         ;
-    tft.fillRect(0, 0, 300, 239, ILI9341_BLUE);
+    tft.fillRect(0, 0, 319, 239, ILI9341_BLUE);
     tft.setCursor(5, 5);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
     tft.setTextSize(2);
     tft.print("Enter Brightness (%) ");
     cursex = tft.getCursorX();
     cursey = tft.getCursorY();
-    tft.print(newbright);
+    tft.print(result);
     tft.setTextSize(5);
     tft.setCursor(0, 30);
     tft.println("7 8 9");
@@ -218,29 +230,44 @@ void EnterBrightness()
     tft.print("OK CANCEL");
     TS_Point p;
     while (!done) {
-        p = ReadTouch();
-        Serial.print(p.x);
-        Serial.print(" ");
-        Serial.println(p.y);
-        if (p.x > 30 && p.y > 30) {
-            ++newbright;
-            tft.setTextSize(2);
-            tft.setCursor(cursex, cursey);
-            tft.print(newbright);
-        }
-        if (p.x < 30 && p.y > 30) {
-            --newbright;
-            tft.setTextSize(2);
-            tft.setCursor(cursex, cursey);
-            tft.print(newbright);
-        }
-        if (p.x < 50 && p.y < 40) {
+        p = ReadTouch(false);
+        // ok
+        if (p.x < 50 && p.y < 32) {
             Serial.println("leaving now");
-            brightness = constrain(newbright, 1, 100);
+            brightness = result.toInt();
+            brightness = constrain(brightness, 1, 100);
             done = true;
         }
-        if (p.x > 50 && p.y < 40) {
+        // cancel
+        if (p.x > 50 && p.y < 32) {
             done = true;
+        }
+        if (RangeTest(p.x, 128, 12) && RangeTest(p.y, 67, 20)) {
+            // delete the last char
+            result = result.substring(0, result.length() - 1);
+            tft.setCursor(cursex, cursey);
+            tft.print(result + String("  "));
+        }
+        for (int ix = 0; ix < 10; ++ix) {
+            // check for match
+            if (RangeTest(p.x, numranges[ix].x, numranges[ix].dx) && RangeTest(p.y, numranges[ix].y, numranges[ix].dy)) {
+                Serial.println("GOT: " + String(ix));
+                if (firstdigit) {
+                    result = String("");
+                    firstdigit = false;
+                }
+                result += String(ix);
+                tft.setTextSize(2);
+                tft.setCursor(cursex, cursey);
+                tft.print(result+String("  "));
+                break;
+            }
         }
     }
+}
+
+// check if number is in range +/- dif
+bool RangeTest(int num, int base, int diff)
+{
+    return num > base - diff && num < base + diff;
 }
