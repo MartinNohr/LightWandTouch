@@ -12,10 +12,10 @@
 
 // This is calibration data for the raw touch data to the screen coordinates
 // since we rotated the screen these reverse x and y
-#define TS_MINX 314
-#define TS_MINY 272
-#define TS_MAXX 3746
-#define TS_MAXY 3823
+#define TS_MINX 226
+#define TS_MINY 166
+#define TS_MAXX 3861
+#define TS_MAXY 3790
 
 // The STMPE610 uses hardware SPI on the shield, and #8
 #define STMPE_CS 8
@@ -234,12 +234,12 @@ void EnterBrightness()
             tft.setCursor(cursex, cursey);
             tft.print(newbright);
         }
-        if (p.x < 30 && p.y < 30) {
+        if (p.x < 50 && p.y < 40) {
             Serial.println("leaving now");
             brightness = constrain(newbright, 1, 100);
             done = true;
         }
-        if (p.x > 30 && p.y < 30) {
+        if (p.x > 50 && p.y < 40) {
             done = true;
         }
     }
