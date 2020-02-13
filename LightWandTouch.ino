@@ -183,9 +183,23 @@ void ShowMenu(struct MenuItem* menu)
     }
 }
 
+// get a new brightness value
 void EnterBrightness()
 {
-    String result = String(brightness);
+    ReadNumberPad(&brightness, 1, 100, "Enter Brightness (%) ");
+}
+
+// check if number is in range +/- dif
+bool RangeTest(int num, int base, int diff)
+{
+    return num > base - diff && num < base + diff;
+}
+
+// return a number using the onscreen keypad, false if cancelled
+bool ReadNumberPad(int* pval, int min, int max, char* text)
+{
+    bool status = true;
+    String result = String(*pval);
     struct NumRange {
         int x;
         int dx;
@@ -215,7 +229,7 @@ void EnterBrightness()
     tft.setCursor(5, 5);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
     tft.setTextSize(2);
-    tft.print("Enter Brightness (%) ");
+    tft.print(text);
     cursex = tft.getCursorX();
     cursey = tft.getCursorY();
     tft.print(result);
@@ -233,20 +247,20 @@ void EnterBrightness()
         p = ReadTouch(false);
         // ok
         if (p.x < 50 && p.y < 32) {
-            Serial.println("leaving now");
-            brightness = result.toInt();
-            brightness = constrain(brightness, 1, 100);
+            *pval = result.toInt();
+            *pval = constrain(*pval, min, max);
             done = true;
         }
         // cancel
         if (p.x > 50 && p.y < 32) {
             done = true;
+            status = false;
         }
         if (RangeTest(p.x, 128, 12) && RangeTest(p.y, 67, 20)) {
             // delete the last char
             result = result.substring(0, result.length() - 1);
             tft.setCursor(cursex, cursey);
-            tft.print(result + String("  "));
+            tft.print(result + String(" "));
         }
         for (int ix = 0; ix < 10; ++ix) {
             // check for match
@@ -256,18 +270,14 @@ void EnterBrightness()
                     result = String("");
                     firstdigit = false;
                 }
-                result += String(ix);
+                if (result.length() < 3)
+                    result += String(ix);
                 tft.setTextSize(2);
                 tft.setCursor(cursex, cursey);
-                tft.print(result+String("  "));
+                tft.print(result + String("  "));
                 break;
             }
         }
     }
-}
-
-// check if number is in range +/- dif
-bool RangeTest(int num, int base, int diff)
-{
-    return num > base - diff && num < base + diff;
+    return status;
 }
