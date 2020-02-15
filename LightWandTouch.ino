@@ -142,7 +142,7 @@ void loop()
       return;
     }
     // Retrieve a point  
-    TS_Point p = ReadTouch(false);
+    TS_Point p = ReadTouch(true);
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
@@ -259,6 +259,7 @@ void EnterFileName()
     int startindex = 0;
     tft.setTextSize(3);
     tft.fillScreen(ILI9341_BLACK);
+    TS_Point p;
     while (!done) {
         tft.setCursor(0, 0);
         tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -280,9 +281,17 @@ void EnterFileName()
         while (!ts.touched()) {
             ;
         }
-        if (startindex != 0)
+        p = ReadTouch(true);
+        if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, 25, 20)) {
+            startindex += 5;
+        }
+        else if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
+            startindex -= 5;
+        }
+        else {
             done = true;
-        startindex += 5;
+        }
+        startindex = constrain(startindex, 0, NumberOfFiles - 5);
     }
 }
 
