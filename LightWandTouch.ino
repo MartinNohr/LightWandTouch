@@ -58,22 +58,23 @@ int NumberOfFiles = 0;
 String FileNames[200];
 
 // The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eText };
+enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt };
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
     int x, y;
     char* text;
     int* value;
+    void(*function)();
 } ;
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 30
 MenuItem MainMenu[] = {
     {eClear,ILI9341_BLACK},
-    {eText,ILI9341_BLACK,0,0,"Files"},
-    {eText,ILI9341_BLACK,0,1 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold},
-    {eText,ILI9341_BLACK,0,2 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness},
-    {eText,ILI9341_BLACK,0,3 * LINEHEIGHT,"Repeat Count: %d",&repeatCount},
+    {eTextInt,ILI9341_BLACK,0,0,"Files"},
+    {eTextInt,ILI9341_BLACK,0,1 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
+    {eTextInt,ILI9341_BLACK,0,2 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
+    {eTextInt,ILI9341_BLACK,0,3 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
     // make sure this one is last
     {eTerminate}
 };
@@ -147,15 +148,25 @@ void loop()
     if (! ts.touched()) {
       return;
     }
-    EnterBrightness();
-    delay(500);
-    EnterFrameHold();
-    ShowMenu(MainMenu);
     // Retrieve a point  
-//    TS_Point p = ReadTouch(false);
-    //Serial.print("("); Serial.print(p.x);
-    //Serial.print(", "); Serial.print(p.y);
-    //Serial.println(")");
+    TS_Point p = ReadTouch(false);
+    Serial.print("("); Serial.print(p.x);
+    Serial.print(", "); Serial.print(p.y);
+    Serial.println(")");
+    for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
+        if (MainMenu[ix].op == eTextInt) {
+            // look for a match
+            if (RangeTest(239 - p.y, MainMenu[ix].y, LINEHEIGHT - 5)) {
+                // got one, service it
+                if (MainMenu[ix].function) {
+                    Serial.println(ix);
+                    (*MainMenu[ix].function)();
+                    break;
+                }
+            }
+        }
+    }
+    ShowMenu(MainMenu);
 #else
     tft.fillCircle(5, 5, 5, ILI9341_WHITE);
     tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
@@ -209,7 +220,7 @@ void ShowMenu(struct MenuItem* menu)
         case eClear:
             tft.fillScreen(menu->back_color);
             break;
-        case eText:
+        case eTextInt:
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
             tft.setCursor(menu->x, menu->y);
             if (menu->value) {
@@ -236,6 +247,12 @@ void EnterBrightness()
 void EnterFrameHold()
 {
     ReadNumberPad(&frameHold, 0, 1000, "Frame Time (mSec) ");
+}
+
+// get repeat count
+void EnterRepeatCount()
+{
+    ReadNumberPad(&repeatCount, 1, 1000, "Repeat Count ");
 }
 
 // check if number is in range +/- dif
