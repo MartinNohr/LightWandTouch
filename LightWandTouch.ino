@@ -58,7 +58,7 @@ int NumberOfFiles = 0;
 String FileNames[200];
 
 // The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt };
+enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eText };
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
@@ -71,10 +71,10 @@ typedef MenuItem MenuItem;
 #define LINEHEIGHT 30
 MenuItem MainMenu[] = {
     {eClear,ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,0,0,"Files"},
-    {eTextInt,ILI9341_BLACK,0,1 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
-    {eTextInt,ILI9341_BLACK,0,2 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
-    {eTextInt,ILI9341_BLACK,0,3 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eText,ILI9341_BLACK,   2,0 * LINEHEIGHT,"Files",NULL,EnterFileName},
+    {eTextInt,ILI9341_BLACK,2,1 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
+    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
+    {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
     // make sure this one is last
     {eTerminate}
 };
@@ -153,20 +153,23 @@ void loop()
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
+    bool gotone = false;
     for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
-        if (MainMenu[ix].op == eTextInt) {
+        if (MainMenu[ix].op == eTextInt || MainMenu[ix].op == eText) {
             // look for a match
-            if (RangeTest(239 - p.y, MainMenu[ix].y, LINEHEIGHT - 5)) {
+            if (RangeTest(tft.height() - p.y, MainMenu[ix].y, LINEHEIGHT - 10)) {
                 // got one, service it
                 if (MainMenu[ix].function) {
                     Serial.println(ix);
                     (*MainMenu[ix].function)();
+                    gotone = true;
                     break;
                 }
             }
         }
     }
-    ShowMenu(MainMenu);
+    if (gotone)
+        ShowMenu(MainMenu);
 #else
     tft.fillCircle(5, 5, 5, ILI9341_WHITE);
     tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
@@ -221,6 +224,7 @@ void ShowMenu(struct MenuItem* menu)
             tft.fillScreen(menu->back_color);
             break;
         case eTextInt:
+        case eText:
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
             tft.setCursor(menu->x, menu->y);
             if (menu->value) {
@@ -240,7 +244,7 @@ void ShowMenu(struct MenuItem* menu)
 // get a new brightness value
 void EnterBrightness()
 {
-    ReadNumberPad(&nStripBrightness, 1, 100, "Brightness (%) ");
+    ReadNumberPad(&nStripBrightness, 1, 100, "Wand Brightness (%) ");
 }
 
 // get a new framehold value
@@ -253,6 +257,20 @@ void EnterFrameHold()
 void EnterRepeatCount()
 {
     ReadNumberPad(&repeatCount, 1, 1000, "Repeat Count ");
+}
+
+// select the filename
+void EnterFileName()
+{
+    Serial.println("in enterfilename");
+    tft.fillScreen(ILI9341_BLACK);
+    tft.setCursor(0, 0);
+    for (int ix = 0; ix < NumberOfFiles; ++ix) {
+        tft.println(FileNames[ix]);
+    }
+    while (!ts.touched()) {
+        ;
+    }
 }
 
 // check if number is in range +/- dif
