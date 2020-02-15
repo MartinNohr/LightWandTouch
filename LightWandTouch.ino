@@ -68,13 +68,13 @@ struct MenuItem {
     void(*function)();
 } ;
 typedef MenuItem MenuItem;
-#define LINEHEIGHT 30
+#define LINEHEIGHT 36
 MenuItem MainMenu[] = {
     {eClear,ILI9341_BLACK},
-    {eText,ILI9341_BLACK,   2,0 * LINEHEIGHT,"Files",NULL,EnterFileName},
-    {eTextInt,ILI9341_BLACK,2,1 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
-    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
-    {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eText,ILI9341_BLACK,   2,1 * LINEHEIGHT,"Files",NULL,EnterFileName},
+    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
+    {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
+    {eTextInt,ILI9341_BLACK,2,4 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
     // make sure this one is last
     {eTerminate}
 };
@@ -104,14 +104,6 @@ void setup(void) {
     tft.setTextSize(2);
     tft.println("   Version 0.9");
     delay(500);
-    tft.fillScreen(ILI9341_BLACK);
-    tft.setCursor(0, 0);
-    for (int ix = 0; ix < NumberOfFiles; ++ix) {
-        tft.println(FileNames[ix]);
-    }
-    while (!ts.touched()) {
-        ;
-    }
     //for (int ix = 0; ix < 319; ++ix) {
     //    int col;
     //    col = rand();
@@ -128,6 +120,7 @@ void setup(void) {
     //    delay(50);
     //}
     //delay(500);
+    // control brightness of screen
     //pinMode(3, OUTPUT);
     //analogWrite(3, 10);
     //delay(2000);
@@ -144,8 +137,8 @@ void loop()
     //if (ts.bufferEmpty()) {
     //    return;
     //}
-    // You can also wait for a touch
-    if (! ts.touched()) {
+    // wait for a touch
+    if (!ts.touched()) {
       return;
     }
     // Retrieve a point  
@@ -157,7 +150,7 @@ void loop()
     for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
         if (MainMenu[ix].op == eTextInt || MainMenu[ix].op == eText) {
             // look for a match
-            if (RangeTest(tft.height() - p.y, MainMenu[ix].y, LINEHEIGHT - 10)) {
+            if (RangeTest(tft.height() - p.y, MainMenu[ix].y, LINEHEIGHT / 3)) {
                 // got one, service it
                 if (MainMenu[ix].function) {
                     Serial.println(ix);
@@ -262,21 +255,45 @@ void EnterRepeatCount()
 // select the filename
 void EnterFileName()
 {
-    Serial.println("in enterfilename");
+    bool done = false;
+    int startindex = 0;
+    tft.setTextSize(3);
     tft.fillScreen(ILI9341_BLACK);
-    tft.setCursor(0, 0);
-    for (int ix = 0; ix < NumberOfFiles; ++ix) {
-        tft.println(FileNames[ix]);
-    }
-    while (!ts.touched()) {
-        ;
+    while (!done) {
+        tft.setCursor(0, 0);
+        tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+        for (int ix = startindex; ix < NumberOfFiles; ++ix) {
+            tft.println();
+            // pad out to 16
+            String nm = FileNames[ix];
+            while (nm.length() < 15)
+                nm += " ";
+            tft.println(nm);
+        }
+        tft.fillRoundRect(tft.width() - 50, 6, 45, 45, 10, ILI9341_WHITE);
+        tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_WHITE);
+        tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
+        tft.setCursor(tft.width() - 35, 18);
+        tft.print("-");
+        tft.setCursor(tft.width() - 35, tft.height() - 38);
+        tft.print("+");
+        while (!ts.touched()) {
+            ;
+        }
+        if (startindex != 0)
+            done = true;
+        startindex += 5;
     }
 }
 
 // check if number is in range +/- dif
 bool RangeTest(int num, int base, int diff)
 {
-    return num > base - diff && num < base + diff;
+    int min = base - diff;
+    if (min < 0)
+        min = 0;
+    int max = base + diff;
+    return num > min && num < max;
 }
 
 // return a number using the onscreen keypad, false if cancelled
