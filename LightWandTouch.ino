@@ -64,7 +64,6 @@ enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eText, eMenu, eExi
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
-    int x, y;
     char* text;
     void* value;
     void(*function)();
@@ -72,21 +71,28 @@ struct MenuItem {
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 36
 MenuItem RepeatMenu[] = {
-    {eClear,  ILI9341_BLUE},
-    {eTextInt,ILI9341_BLACK,2,1 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
-    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Repeat Delay: %d",&repeatDelay,EnterRepeatDelay},
-    {eExit,   ILI9341_BLACK,2,3 * LINEHEIGHT,"Exit"},
+    {eClear,  ILI9341_BLACK},
+    {eTextInt,ILI9341_BLACK,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eTextInt,ILI9341_BLACK,"Repeat Delay: %d",&repeatDelay,EnterRepeatDelay},
+    {eExit,   ILI9341_BLACK,"Main Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
+MenuItem WandMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
+    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
+    {eExit,   ILI9341_BLACK,"Main Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,2,1 * LINEHEIGHT,"File Chooser",NULL,EnterFileName},
-    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
-    {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
-    {eMenu,   ILI9341_BLACK,2,4 * LINEHEIGHT,"Repeat Settings",RepeatMenu},
-    {eText,   ILI9341_BLACK,2,5 * LINEHEIGHT,"Built-in Images"},
-    {eText,   ILI9341_BLACK,2,6 * LINEHEIGHT,"Settings"},
+    {eText,   ILI9341_BLACK,"File Chooser",NULL,EnterFileName},
+    {eMenu,   ILI9341_BLACK,"Wand Settings",WandMenu},
+    {eMenu,   ILI9341_BLACK,"Repeat Settings",RepeatMenu},
+    {eText,   ILI9341_BLACK,"Built-in Images"},
+    {eText,   ILI9341_BLACK,"Settings"},
     // make sure this one is last
     {eTerminate}
 };
@@ -175,7 +181,7 @@ void loop()
     // see if we got a menu match
     for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
         // look for a match
-        if (RangeTest(p.y, currentMenu[ix].y, LINEHEIGHT / 3)) {
+        if (RangeTest(p.y, ix * LINEHEIGHT, LINEHEIGHT / 2)) {
             Serial.println("clicked on menu");
             // got one, service it
             switch (currentMenu[ix].op) {
@@ -188,12 +194,8 @@ void loop()
                 }
                 break;
             case eMenu:
-                Serial.println("changing menu");
                 menustack[menuLevel++] = currentMenu;
-                currentMenu = MainMenu[ix].value;
-                Serial.println("menu: ", String((long)(MainMenu[ix].value)));
-                Serial.println("menu: ", String((long)(menustack[menuLevel - 1]->value)));
-                //currentMenu = (MenuItem*)(menustack[menuLevel - 1]->value);
+                currentMenu = (MenuItem*)(menustack[menuLevel - 1][ix].value);
                 bMenuChanged = true;
                 break;
             case eExit: // go back a level
@@ -263,8 +265,11 @@ TS_Point ReadTouch(bool wait)
     return p;
 }
 
+// display the menu
 void ShowMenu(struct MenuItem* menu)
 {
+    int y = 0;
+    int x = 0;
     tft.setTextSize(2);
     // loop through the menu
     while (menu->op != eTerminate) {
@@ -274,8 +279,10 @@ void ShowMenu(struct MenuItem* menu)
             break;
         case eTextInt:
         case eText:
+            // increment displayable lines
+            y += LINEHEIGHT;
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
-            tft.setCursor(menu->x, menu->y);
+            tft.setCursor(x, y);
             if (menu->value) {
                 char line[100];
                 sprintf(line, menu->text, *(int*)menu->value);
@@ -287,8 +294,9 @@ void ShowMenu(struct MenuItem* menu)
             break;
         case eMenu:
         case eExit:
+            y += LINEHEIGHT;
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
-            tft.setCursor(menu->x, menu->y);
+            tft.setCursor(x, y);
             tft.print(menu->text);
             break;
         }
