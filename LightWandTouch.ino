@@ -28,6 +28,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 // The display also uses hardware SPI, plus #9 & #10
 #define TFT_CS 10
 #define TFT_DC 9
+#define TFT_BRIGHT 3
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // wand settings
@@ -59,28 +60,40 @@ int NumberOfFiles = 0;
 String FileNames[200];
 
 // The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eText };
+enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eText, eMenu, eExit };
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
     int x, y;
     char* text;
-    int* value;
+    void* value;
     void(*function)();
 } ;
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 36
+MenuItem RepeatMenu[] = {
+    {eClear,  ILI9341_BLUE},
+    {eTextInt,ILI9341_BLACK,2,1 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Repeat Delay: %d",&repeatDelay,EnterRepeatDelay},
+    {eExit,   ILI9341_BLACK,2,3 * LINEHEIGHT,"Exit"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,2,1 * LINEHEIGHT,"Files",NULL,EnterFileName},
+    {eText,   ILI9341_BLACK,2,1 * LINEHEIGHT,"File Chooser",NULL,EnterFileName},
     {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
     {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
-    {eTextInt,ILI9341_BLACK,2,4 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eMenu,   ILI9341_BLACK,2,4 * LINEHEIGHT,"Repeat Settings",RepeatMenu},
     {eText,   ILI9341_BLACK,2,5 * LINEHEIGHT,"Built-in Images"},
     {eText,   ILI9341_BLACK,2,6 * LINEHEIGHT,"Settings"},
     // make sure this one is last
     {eTerminate}
 };
+MenuItem* currentMenu = MainMenu;
+// a stack for menus
+MenuItem* menustack[10];
+int menuLevel = 0;
 
 void setup(void) {
     tft.begin();
@@ -94,12 +107,9 @@ void setup(void) {
     }
     Serial.println("Touchscreen started");
     tft.fillScreen(ILI9341_BLACK);
-    //Serial.println(tft.width());
-    //Serial.println(tft.height());
     tft.setRotation(1);
-    //Serial.println(tft.width());
-    //Serial.println(tft.height());
 #if !CALIBRATE
+    // we're at the root folder
     folders[folderLevel = 0] = String("/");
     setupSDcard();
     tft.setTextColor(ILI9341_BLUE);
@@ -111,24 +121,8 @@ void setup(void) {
     tft.println("       Version 0.9");
     tft.println("       Martin Nohr");
     delay(1500);
-    //for (int ix = 0; ix < 319; ++ix) {
-    //    int col;
-    //    col = rand();
-    //    int len = 319 - ix;
-    //    len = constrain(len, 100, 240);
-    //    //tft.fillRect(ix, 100, 10, 100, col);
-    //    tft.drawLine(ix, 100, ix, len, col);
-    //    delay(10);
-    //    tft.drawLine(ix, 100, ix, len, ILI9341_BLACK);
-    //}
-    //tft.fillCircle(120, 120, 50, ILI9341_GREENYELLOW);
-    //for (int ix = 50; ix; --ix) {
-    //    tft.drawCircle(120, 120, ix, ILI9341_BLACK);
-    //    delay(50);
-    //}
-    //delay(500);
     // control brightness of screen
-    //pinMode(3, OUTPUT);
+    //pinMode(TFT_BRIGHT, OUTPUT);
     //analogWrite(3, 10);
     //delay(2000);
     //analogWrite(3, 255);
@@ -150,7 +144,7 @@ void loop()
     //  return;
     //}
     if (bMenuChanged) {
-        ShowMenu(MainMenu);
+        ShowMenu(currentMenu);
         ShowGo();
         bMenuChanged = false;
     }
@@ -178,18 +172,37 @@ void loop()
         bMenuChanged = true;
         return;
     }
-    for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
-        if (MainMenu[ix].op == eTextInt || MainMenu[ix].op == eText) {
-            // look for a match
-            if (RangeTest(p.y, MainMenu[ix].y, LINEHEIGHT / 3)) {
-                // got one, service it
-                if (MainMenu[ix].function) {
+    // see if we got a menu match
+    for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
+        // look for a match
+        if (RangeTest(p.y, currentMenu[ix].y, LINEHEIGHT / 3)) {
+            Serial.println("clicked on menu");
+            // got one, service it
+            switch (currentMenu[ix].op) {
+            case eText:
+            case eTextInt:
+                if (currentMenu[ix].function) {
                     Serial.println(ix);
-                    (*MainMenu[ix].function)();
+                    (*currentMenu[ix].function)();
                     bMenuChanged = true;
-                    break;
+                }
+                break;
+            case eMenu:
+                Serial.println("changing menu");
+                menustack[menuLevel++] = currentMenu;
+                currentMenu = MainMenu[ix].value;
+                Serial.println("menu: ", String((long)(MainMenu[ix].value)));
+                Serial.println("menu: ", String((long)(menustack[menuLevel - 1]->value)));
+                //currentMenu = (MenuItem*)(menustack[menuLevel - 1]->value);
+                bMenuChanged = true;
+                break;
+            case eExit: // go back a level
+                if (menuLevel) {
+                    currentMenu = menustack[--menuLevel];
+                    bMenuChanged = true;
                 }
             }
+            break;
         }
     }
     
@@ -265,12 +278,18 @@ void ShowMenu(struct MenuItem* menu)
             tft.setCursor(menu->x, menu->y);
             if (menu->value) {
                 char line[100];
-                sprintf(line, menu->text, *menu->value);
+                sprintf(line, menu->text, *(int*)menu->value);
                 tft.print(line);
             }
             else {
                 tft.print(menu->text);
             }
+            break;
+        case eMenu:
+        case eExit:
+            tft.setTextColor(ILI9341_WHITE, menu->back_color);
+            tft.setCursor(menu->x, menu->y);
+            tft.print(menu->text);
             break;
         }
         ++menu;
@@ -293,6 +312,12 @@ void EnterFrameHold()
 void EnterRepeatCount()
 {
     ReadNumberPad(&repeatCount, 1, 1000, "Repeat Count ");
+}
+
+// get repeat delay
+void EnterRepeatDelay()
+{
+    ReadNumberPad(&repeatDelay, 1, 1000, "Repeat Delay (Sec) ");
 }
 
 // select the filename
@@ -462,11 +487,11 @@ void setupSDcard() {
     }
 //    lcd.clear();
 //    lcd.print("SD init done    ");
-    delay(1000);
+    //delay(1000);
 //    folders[folderLevel = 0] = String("/");
 //    lcd.clear();
 //    lcd.print("Reading SD...   ");
-    delay(500);
+    //delay(500);
     GetFileNamesFromSD(folders[folderLevel]);
     CurrentFilename = FileNames[CurrentFileIndex];
     //DisplayCurrentFilename();
@@ -497,7 +522,7 @@ bool GetFileNamesFromSD(String dir) {
         if (!file.isHidden()) {
             char buf[100];
             file.getName(buf, sizeof buf);
-            Serial.println("name: " + String(buf));
+            //Serial.println("name: " + String(buf));
             if (file.isDir()) {
                 FileNames[NumberOfFiles] = String(OPEN_FOLDER_CHAR) + buf;
                 NumberOfFiles++;
