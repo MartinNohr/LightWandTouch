@@ -50,7 +50,7 @@ bool bGammaCorrection = true;             // set to use the gamma table
 bool bAutoLoadSettings = false;           // set to automatically load saved settings
 bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
 bool bCancelRun = false;                  // set to cancel a running job
-bool bChainFiles = false;            // set to run all the files from current to the last one in the current folder
+bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
 SdFile dataFile;
 String CurrentFilename = "";
 int CurrentFileIndex = 0;
@@ -70,11 +70,13 @@ struct MenuItem {
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 36
 MenuItem MainMenu[] = {
-    {eClear,ILI9341_BLACK},
-    {eText,ILI9341_BLACK,   2,1 * LINEHEIGHT,"Files",NULL,EnterFileName},
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,2,1 * LINEHEIGHT,"Files",NULL,EnterFileName},
     {eTextInt,ILI9341_BLACK,2,2 * LINEHEIGHT,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
     {eTextInt,ILI9341_BLACK,2,3 * LINEHEIGHT,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
     {eTextInt,ILI9341_BLACK,2,4 * LINEHEIGHT,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
+    {eText,   ILI9341_BLACK,2,5 * LINEHEIGHT,"Built-in Images"},
+    {eText,   ILI9341_BLACK,2,6 * LINEHEIGHT,"Settings"},
     // make sure this one is last
     {eTerminate}
 };
@@ -99,11 +101,14 @@ void setup(void) {
 #if !CALIBRATE
     folders[folderLevel = 0] = String("/");
     setupSDcard();
+    tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
+    tft.println("\n\n");
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
-    tft.println("   Version 0.9");
-    delay(500);
+    tft.println("\n");
+    tft.println("       Version 0.9");
+    delay(1500);
     //for (int ix = 0; ix < 319; ++ix) {
     //    int col;
     //    col = rand();
@@ -126,9 +131,10 @@ void setup(void) {
     //delay(2000);
     //analogWrite(3, 255);
     //delay(2000);
-    ShowMenu(MainMenu);
 #endif
 }
+
+bool bMenuChanged = true;
 
 void loop()
 {
@@ -138,15 +144,38 @@ void loop()
     //    return;
     //}
     // wait for a touch
-    if (!ts.touched()) {
-      return;
+    //if (!ts.touched()) {
+    //  return;
+    //}
+    if (bMenuChanged) {
+        ShowMenu(MainMenu);
+        ShowGo();
+        bMenuChanged = false;
     }
+
     // Retrieve a point  
-    TS_Point p = ReadTouch(true);
+    TS_Point p = ReadTouch(false);
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
-    bool gotone = false;
+    // see if the go button
+    if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
+        Serial.println("GO...");
+        tft.fillScreen(ILI9341_BLUE);
+        tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
+        for (int x = 0; x <= 100; ++x) {
+            int wide = map(x, 0, 100, 0, tft.width() - 1);
+            tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
+            if (ts.touched()) {
+                ReadTouch(false);
+                break;
+            }
+            delay(100);
+        }
+        delay(500);
+        bMenuChanged = true;
+        return;
+    }
     for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
         if (MainMenu[ix].op == eTextInt || MainMenu[ix].op == eText) {
             // look for a match
@@ -155,14 +184,13 @@ void loop()
                 if (MainMenu[ix].function) {
                     Serial.println(ix);
                     (*MainMenu[ix].function)();
-                    gotone = true;
+                    bMenuChanged = true;
                     break;
                 }
             }
         }
     }
-    if (gotone)
-        ShowMenu(MainMenu);
+    
 #else
     tft.fillCircle(5, 5, 5, ILI9341_WHITE);
     tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
@@ -175,6 +203,17 @@ void loop()
 #endif
 }
 
+void ShowGo()
+{
+    tft.setCursor(0, 0);
+    tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
+    tft.print("Selected: " + FileNames[CurrentFileIndex]);
+    tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
+    tft.setCursor(tft.width() - 40, tft.height() - 34);
+    tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
+    tft.print("GO");
+}
+
 // Top left is origin, down is y, right is x
 TS_Point ReadTouch(bool wait)
 {
@@ -185,8 +224,9 @@ TS_Point ReadTouch(bool wait)
     delay(10);
     // Retrieve a point  
     TS_Point p = ts.getPoint();
-
-    while (p.z < 20 || p.z > 250 || p.y < 100 || p.x < 100) {
+    // eat the ones with not enough pressure
+    while (p.z < 35 || p.z > 250) {
+        //while (p.z < 35 || p.z > 250 || p.y < 100 || p.x < 100) {
         p = ts.getPoint();
     }
     Serial.print("X = "); Serial.print(p.x);
@@ -274,20 +314,34 @@ void EnterFileName()
         }
         tft.fillRoundRect(tft.width() - 50, 6, 45, 45, 10, ILI9341_WHITE);
         tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_WHITE);
+        tft.fillRoundRect(tft.width() - 50, tft.height() / 2 - 22, 45, 45, 10, ILI9341_WHITE);
         tft.setTextColor(ILI9341_BLACK, ILI9341_WHITE);
         tft.setCursor(tft.width() - 35, 18);
         tft.print("-");
         tft.setCursor(tft.width() - 35, tft.height() - 38);
         tft.print("+");
+        tft.setCursor(tft.width() - 35, tft.height() / 2 - 10);
+        tft.print("X");
         while (!ts.touched()) {
             ;
         }
         p = ReadTouch(true);
-        if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, 25, 20)) {
+        if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, 25, 20)) {
             startindex -= 5;
         }
-        else if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
+        else if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
             startindex += 5;
+        }
+        // see if a file
+        else if (p.x < tft.width() - 80) {
+            // get the row
+            int row = (p.y - 20);
+            row = constrain(row, 0, tft.height() - 1);
+            row /= 50;
+            Serial.println("file#: " + String(row));
+            CurrentFileIndex = row + startindex;
+            CurrentFilename = FileNames[CurrentFileIndex];
+            done = true;
         }
         else {
             done = true;
@@ -357,13 +411,13 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     while (!done) {
         p = ReadTouch(false);
         // ok
-        if (p.x < 50 && p.y > tft.height() - 32) {
+        if (p.x < 50 && p.y > tft.height() - 40) {
             *pval = result.toInt();
             *pval = constrain(*pval, min, max);
             done = true;
         }
         // cancel
-        if (p.x > 50 && p.y > tft.height() - 32) {
+        if (p.x > 50 && p.y > tft.height() - 40) {
             done = true;
             status = false;
         }
