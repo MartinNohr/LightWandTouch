@@ -150,7 +150,7 @@ void loop()
     for (int ix = 0; MainMenu[ix].op != eTerminate; ++ix) {
         if (MainMenu[ix].op == eTextInt || MainMenu[ix].op == eText) {
             // look for a match
-            if (RangeTest(tft.height() - p.y, MainMenu[ix].y, LINEHEIGHT / 3)) {
+            if (RangeTest(p.y, MainMenu[ix].y, LINEHEIGHT / 3)) {
                 // got one, service it
                 if (MainMenu[ix].function) {
                     Serial.println(ix);
@@ -175,6 +175,7 @@ void loop()
 #endif
 }
 
+// Top left is origin, down is y, right is x
 TS_Point ReadTouch(bool wait)
 {
     if (wait) {
@@ -194,7 +195,7 @@ TS_Point ReadTouch(bool wait)
     // Scale from ~0->4000 to tft.width using the calibration #'s
     int x, y;
     x = map(p.y, TS_MINY, TS_MAXY, 0, tft.width());
-    y = map(p.x, TS_MINX, TS_MAXX, 0, tft.height());
+    y = map(p.x, TS_MINX, TS_MAXX, tft.height(), 0);
 
     Serial.print("("); Serial.print(x);
     Serial.print(", "); Serial.print(y);
@@ -283,10 +284,10 @@ void EnterFileName()
         }
         p = ReadTouch(true);
         if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, 25, 20)) {
-            startindex += 5;
+            startindex -= 5;
         }
         else if (RangeTest(p.x, tft.width() - 20, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
-            startindex -= 5;
+            startindex += 5;
         }
         else {
             done = true;
@@ -317,16 +318,16 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
         int dy;
     };
     struct NumRange numranges[10] = {
-        {65,12,67,20},  // 0
-        {25,12,112,20}, // 1
-        {65,12,112,20}, // 2
-        {128,12,112,20},// 3
-        {25,12,158,20}, // 4
-        {65,12,158,20}, // 5
-        {128,12,158,20},// 6
-        {25,12,198,20}, // 7
-        {65,12,198,20}, // 8
-        {128,12,198,20},// 9
+        {65,12,170,20}, // 0
+        {15,12,128,20}, // 1
+        {65,12,128,20}, // 2
+        {128,12,128,20},// 3
+        {12,12,85,20},  // 4
+        {65,12,85,20},  // 5
+        {128,12,85,20}, // 6
+        {12,12,45,20},  // 7
+        {65,12,45,20},  // 8
+        {125,12,45,20}, // 9
     };
     bool firstdigit = true;
     bool done = false;
@@ -356,17 +357,17 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     while (!done) {
         p = ReadTouch(false);
         // ok
-        if (p.x < 50 && p.y < 32) {
+        if (p.x < 50 && p.y > tft.height() - 32) {
             *pval = result.toInt();
             *pval = constrain(*pval, min, max);
             done = true;
         }
         // cancel
-        if (p.x > 50 && p.y < 32) {
+        if (p.x > 50 && p.y > tft.height() - 32) {
             done = true;
             status = false;
         }
-        if (RangeTest(p.x, 128, 12) && RangeTest(p.y, 67, 20)) {
+        if (RangeTest(p.x, 128, 12) && RangeTest(p.y, 158, 20)) {
             // delete the last char
             result = result.substring(0, result.length() - 1);
             tft.setCursor(cursex, cursey);
