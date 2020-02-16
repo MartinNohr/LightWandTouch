@@ -1,7 +1,7 @@
 /*
     This is the Light Wand code moved over to use a graphics touch screen
 */
-// set this to calibrate the display
+// set this to calibrate the touch screen
 #define CALIBRATE 0
 
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -10,6 +10,7 @@
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_STMPE610.h>
 #include <sdfat.h>
+#include <FastLED.h>
 
 // This is calibration data for the raw touch data to the screen coordinates
 // since we rotated the screen these reverse x and y
@@ -108,6 +109,7 @@ void setup(void) {
     tft.setTextSize(2);
     tft.println("\n");
     tft.println("       Version 0.9");
+    tft.println("       Martin Nohr");
     delay(1500);
     //for (int ix = 0; ix < 319; ++ix) {
     //    int col;
@@ -207,7 +209,7 @@ void ShowGo()
 {
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.print("Selected: " + FileNames[CurrentFileIndex]);
+    tft.print(CurrentFilename.substring(0, CurrentFilename.length() - 4) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
