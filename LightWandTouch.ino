@@ -60,37 +60,39 @@ int NumberOfFiles = 0;
 String FileNames[200];
 
 // The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eText, eMenu, eExit };
+enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eBool, eText, eMenu, eExit };
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
     char* text;
+    void(*function)(MenuItem*);
     void* value;
-    void(*function)();
+    int min, max;
 } ;
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 36
 MenuItem RepeatMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Repeat Count: %d",&repeatCount,EnterRepeatCount},
-    {eTextInt,ILI9341_BLACK,"Repeat Delay: %d",&repeatDelay,EnterRepeatDelay},
+    {eTextInt,ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
+    {eTextInt,ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
     {eExit,   ILI9341_BLACK,"Main Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem WandMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",&frameHold,EnterFrameHold},
-    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",&nStripBrightness,EnterBrightness},
+    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,15,10000},
+    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
+    {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
     {eExit,   ILI9341_BLACK,"Main Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"File Chooser",NULL,EnterFileName},
-    {eMenu,   ILI9341_BLACK,"Wand Settings",WandMenu},
-    {eMenu,   ILI9341_BLACK,"Repeat Settings",RepeatMenu},
+    {eText,   ILI9341_BLACK,"File Chooser",EnterFileName},
+    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eText,   ILI9341_BLACK,"Built-in Images"},
     {eText,   ILI9341_BLACK,"Settings"},
     // make sure this one is last
@@ -165,6 +167,8 @@ void loop()
         Serial.println("GO...");
         tft.fillScreen(ILI9341_BLUE);
         tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
+        tft.setCursor(0, 12);
+        tft.print(CurrentFilename);
         for (int x = 0; x <= 100; ++x) {
             int wide = map(x, 0, 100, 0, tft.width() - 1);
             tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
@@ -189,7 +193,7 @@ void loop()
             case eTextInt:
                 if (currentMenu[ix].function) {
                     Serial.println(ix);
-                    (*currentMenu[ix].function)();
+                    (*currentMenu[ix].function)(&currentMenu[ix]);
                     bMenuChanged = true;
                 }
                 break;
@@ -304,32 +308,14 @@ void ShowMenu(struct MenuItem* menu)
     }
 }
 
-// get a new brightness value
-void EnterBrightness()
+// get integer values
+void GetIntegerValue(MenuItem* menu)
 {
-    ReadNumberPad(&nStripBrightness, 1, 100, "Wand Brightness (%) ");
-}
-
-// get a new framehold value
-void EnterFrameHold()
-{
-    ReadNumberPad(&frameHold, 0, 1000, "Frame Time (mSec) ");
-}
-
-// get repeat count
-void EnterRepeatCount()
-{
-    ReadNumberPad(&repeatCount, 1, 1000, "Repeat Count ");
-}
-
-// get repeat delay
-void EnterRepeatDelay()
-{
-    ReadNumberPad(&repeatDelay, 1, 1000, "Repeat Delay (Sec) ");
+    ReadNumberPad((int*)menu->value, menu->min, menu->max, menu->text);
 }
 
 // select the filename
-void EnterFileName()
+void EnterFileName(MenuItem* menu)
 {
     bool done = false;
     int startindex = 0;
@@ -420,19 +406,11 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     };
     bool firstdigit = true;
     bool done = false;
-    int cursex;
-    int cursey;
     // wait for no fingers
     while (ts.touched())
         ;
     tft.fillRect(0, 0, 319, 239, ILI9341_BLUE);
-    tft.setCursor(5, 5);
-    tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.setTextSize(2);
-    tft.print(text);
-    cursex = tft.getCursorX();
-    cursey = tft.getCursorY();
-    tft.print(result);
+    DisplayValueLine(text, result.toInt(), 0);
     tft.setTextSize(5);
     tft.setCursor(0, 30);
     tft.println("7 8 9");
@@ -443,6 +421,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     tft.setCursor(5, 200);
     tft.print("OK CANCEL");
     TS_Point p;
+    int delchars = 0;   // to wipe out digits when the number is shorter on the line
     while (!done) {
         p = ReadTouch(false);
         // ok
@@ -459,27 +438,39 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
         if (RangeTest(p.x, 128, 12) && RangeTest(p.y, 158, 20)) {
             // delete the last char
             result = result.substring(0, result.length() - 1);
-            tft.setCursor(cursex, cursey);
-            tft.print(result + String(" "));
+            delchars = 1;
         }
         for (int ix = 0; ix < 10; ++ix) {
             // check for match
             if (RangeTest(p.x, numranges[ix].x, numranges[ix].dx) && RangeTest(p.y, numranges[ix].y, numranges[ix].dy)) {
-                Serial.println("GOT: " + String(ix));
                 if (firstdigit) {
+                    delchars = result.length();
                     result = String("");
                     firstdigit = false;
                 }
-                if (result.length() < 3)
+                if (result.toInt() < max)
                     result += String(ix);
-                tft.setTextSize(2);
-                tft.setCursor(cursex, cursey);
-                tft.print(result + String("  "));
+                Serial.println("result: " + result);
+                DisplayValueLine(text, result.toInt(), delchars);
+                delchars = 0;
                 break;
             }
         }
     }
     return status;
+}
+void DisplayValueLine(char* text, int val, int blanks)
+{
+    tft.setCursor(5, 5);
+    tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
+    tft.setTextSize(2);
+    char line[100];
+    sprintf(line, text, val);
+    tft.print(line);
+    while (blanks) {
+        tft.print(" ");
+        --blanks;
+    }
 }
 
 void setupSDcard() {
