@@ -168,7 +168,7 @@ void loop()
         tft.fillScreen(ILI9341_BLUE);
         tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
         tft.setCursor(0, 12);
-        tft.print(CurrentFilename);
+        tft.print(GetFilePath() + CurrentFilename);
         for (int x = 0; x <= 100; ++x) {
             int wide = map(x, 0, 100, 0, tft.width() - 1);
             tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
@@ -228,7 +228,7 @@ void ShowGo()
 {
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.print(CurrentFilename.substring(0, CurrentFilename.length() - 4) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
+    tft.print(GetFilePath() + CurrentFilename.substring(0, CurrentFilename.lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
@@ -283,6 +283,7 @@ void ShowMenu(struct MenuItem* menu)
             break;
         case eTextInt:
         case eText:
+        case eBool:
             // increment displayable lines
             y += LINEHEIGHT;
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
@@ -350,7 +351,7 @@ void EnterFileName(MenuItem* menu)
         if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, 25, 20)) {
             startindex -= 5;
         }
-        else if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
+        else if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 20, 20)) {
             startindex += 5;
         }
         // see if a file
@@ -568,4 +569,17 @@ int CompareStrings(String one, String two)
     one.toUpperCase();
     two.toUpperCase();
     return one.compareTo(two);
+}
+
+// build the folder path
+String GetFilePath()
+{
+    String path;
+    for (int ix = 0; ix <= folderLevel; ++ix) {
+        path += folders[ix];
+    }
+    if (path == "/")
+        return path;
+    else
+        return path + "/";
 }
