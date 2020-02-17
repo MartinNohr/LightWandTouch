@@ -63,6 +63,19 @@ int NumberOfFiles = 0;
 String FileNames[200];
 bool bShowBuiltInTests = false;
 
+// built-in "files"
+struct BuiltInItem {
+    char* text;
+    void(*function)();
+};
+typedef BuiltInItem BuiltInItem;
+BuiltInItem BuiltInFiles[] = {
+    {"Running Dot",RunningDot},
+    {"Cylon",TestCylon},
+    {"Meteor",TestMeteor},
+    {"Bouncing Balls",TestBouncingBalls},
+};
+
 // The menu structures
 enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eBool, eText, eMenu, eExit };
 struct MenuItem {
@@ -90,6 +103,7 @@ MenuItem WandMenu[] = {
     {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
     {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
     {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
+    {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
     {eExit,   ILI9341_BLACK,"Main Menu"},
     // make sure this one is last
     {eTerminate}
@@ -99,7 +113,7 @@ MenuItem MainMenu[] = {
     {eText,   ILI9341_BLACK,"File Chooser",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"ON","OFF"},
+    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eText,   ILI9341_BLACK,"Settings"},
     // make sure this one is last
     {eTerminate}
@@ -189,21 +203,22 @@ void loop()
     Serial.println(")");
     // see if the go button
     if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
-        Serial.println("GO...");
+        //Serial.println("GO...");
         tft.fillScreen(ILI9341_BLUE);
         tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
         tft.setCursor(0, 12);
         tft.print(currentFolder + FileNames[CurrentFileIndex]);
-        for (int x = 0; x <= 100; ++x) {
-            int wide = map(x, 0, 100, 0, tft.width() - 1);
-            tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
-            if (ts.touched()) {
-                ReadTouch(false);
-                break;
-            }
-            delay(100);
-        }
-        delay(500);
+        //for (int x = 0; x <= 100; ++x) {
+        //    int wide = map(x, 0, 100, 0, tft.width() - 1);
+        //    tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
+        //    if (ts.touched()) {
+        //        ReadTouch(false);
+        //        break;
+        //    }
+        //    delay(100);
+        //}
+        //delay(500);
+        ProcessFileOrTest(0);
         bMenuChanged = true;
         return;
     }
@@ -250,11 +265,60 @@ void loop()
 #endif
 }
 
+// run file or built-in
+void ProcessFileOrTest(int chainnumber)
+{
+    char line[17];
+    if (startDelay) {
+        for (int seconds = startDelay; seconds; --seconds) {
+            //lcd.setCursor(0, 0);
+            //sprintf(line, "Wait: %d", seconds);
+            //lcd.print(line);
+            delay(1000);
+        }
+    }
+    FastLED.setBrightness(255 * nStripBrightness / 100);
+    for (int counter = repeatCount; counter > 0; counter--) {
+        //if (chainnumber) {
+        //    lcd.setCursor(13, 1);
+        //    char line[10];
+        //    sprintf(line, "%2d", chainnumber);
+        //    lcd.print(line);
+        //}
+        //lcd.setCursor(0, 0);
+        // only display if a file
+        char first = FileNames[CurrentFileIndex][0];
+        if (bShowBuiltInTests) {
+            // run the test
+            (*BuiltInFiles[CurrentFileIndex].function)();
+        }
+        else {
+            // output the file
+            //SendFile(CurrentFilename);
+        }
+        if (bCancelRun) {
+            bCancelRun = false;
+            break;
+        }
+        if (counter > 1) {
+            //lcd.clear();
+            //lcd.setCursor(0, 0);
+            //lcd.print("Repeat delay...");
+            //if (repeatDelay) {
+            //    FastLED.clear();
+            //    FastLED.show();
+            //    delay(repeatDelay);
+            //}
+        }
+    }
+    FastLED.clear(true);
+}
+
 void ShowGo()
 {
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.print((bShowBuiltInTests ? String("Internal:") : currentFolder) + FileNames[CurrentFileIndex].substring(0, FileNames[CurrentFileIndex].lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
+    tft.print((bShowBuiltInTests ? String("*") : currentFolder) + FileNames[CurrentFileIndex].substring(0, FileNames[CurrentFileIndex].lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
@@ -355,11 +419,12 @@ void ToggleFilesBuiltin(MenuItem* menu)
     ToggleBool(menu);
     if (lastval != bShowBuiltInTests) {
         if (bShowBuiltInTests) {
-            // list the builtin ones
-            FileNames[0] = "Cylon";
-            FileNames[1] = "Meteor";
-            NumberOfFiles = 2;
             CurrentFileIndex = 0;
+            NumberOfFiles = 0;
+            for (NumberOfFiles = 0; NumberOfFiles < sizeof BuiltInFiles / sizeof * BuiltInFiles; ++NumberOfFiles) {
+                // add each one
+                FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
+            }
         }
         else {
             // read the SD
@@ -662,22 +727,21 @@ int CompareStrings(String one, String two)
     return one.compareTo(two);
 }
 
-void TestCylon(MenuItem* pmenu)
+void TestCylon()
 {
-    CylonBounce(255 * nStripBrightness / 100, 255, 0, 0, 10, frameHold, 50);
+    CylonBounce(255, 0, 0, 10, frameHold, 50);
 }
-void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
-    FastLED.setBrightness(bright);
     for (int i = 0; i < stripLength - EyeSize - 2; i++) {
         //if (CheckCancel())
         //    return;
         FastLED.clear();
-        leds[i]=CRGB(red / 10, green / 10, blue / 10);
+        leds[i] = CRGB(red / 10, green / 10, blue / 10);
         for (int j = 1; j <= EyeSize; j++) {
-            leds[i+j]=CRGB(red, green, blue);
+            leds[i + j] = CRGB(red, green, blue);
         }
-        leds[i+EyeSize+1]=CRGB( red / 10, green / 10, blue / 10);
+        leds[i + EyeSize + 1] = CRGB(red / 10, green / 10, blue / 10);
         FastLED.show();
         delay(SpeedDelay);
     }
@@ -688,11 +752,11 @@ void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int 
         //if (CheckCancel())
         //    return;
         FastLED.clear();
-        leds[i]=CRGB(red / 10, green / 10, blue / 10);
+        leds[i] = CRGB(red / 10, green / 10, blue / 10);
         for (int j = 1; j <= EyeSize; j++) {
-            leds[i+j]=CRGB(red, green, blue);
+            leds[i + j] = CRGB(red, green, blue);
         }
-        leds[i+EyeSize+1]=CRGB(red / 10, green / 10, blue / 10);
+        leds[i + EyeSize + 1] = CRGB(red / 10, green / 10, blue / 10);
         FastLED.show();
         delay(SpeedDelay);
     }
@@ -701,8 +765,7 @@ void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int 
 }
 
 void TestMeteor() {
-    byte brightness = (255 * nStripBrightness) / 100;
-    meteorRain(brightness, brightness, brightness, 10, 64, true, 30);
+    meteorRain(255, 255, 255, 10, 64, true, 30);
 }
 
 void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTrailDecay, boolean meteorRandomDecay, int SpeedDelay) {
@@ -736,6 +799,123 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
 void fadeToBlack(int ledNo, byte fadeValue) {
     // FastLED
     leds[ledNo].fadeToBlackBy(fadeValue);
+}
+
+// running bits
+void RunningDot()
+{
+    for (int colorvalue = 0; colorvalue <= 3; ++colorvalue) {
+        //if (CheckCancel())
+        //    return;
+        // RGBW
+        byte r, g, b;
+        switch (colorvalue) {
+        case 0: // red
+            r = 255;
+            g = 0;
+            b = 0;
+            break;
+        case 1: // green
+            r = 0;
+            g = 255;
+            b = 0;
+            break;
+        case 2: // blue
+            r = 0;
+            g = 0;
+            b = 255;
+            break;
+        case 3: // white
+            r = 255;
+            g = 255;
+            b = 255;
+            break;
+        }
+        //fixRGBwithGamma(&r, &g, &b);
+        char line[10];
+        for (int ix = 0; ix < stripLength; ++ix) {
+            //if (CheckCancel())
+            //    return;
+            //lcd.setCursor(11, 0);
+            //sprintf(line, "%3d", ix);
+            //lcd.print(line);
+            if (ix > 0) {
+                leds[ix - 1] = 0;
+            }
+            leds[ix] = CRGB(r, g, b);
+            FastLED.show();
+            delay(frameHold);
+        }
+        // remember the last one, turn it off
+        leds[stripLength - 1] = 0;
+        FastLED.show();
+    }
+}
+
+#define BallCount 4
+void TestBouncingBalls() {
+    byte colors[BallCount][3] = {
+        {255, 0, 0},
+        {255, 255, 255},
+        {0, 0, 255},
+        {0, 255, 0}
+    };
+
+    BouncingColoredBalls(colors);
+}
+
+void BouncingColoredBalls(byte colors[][3]) {
+    float Gravity = -9.81;
+    int StartHeight = 1;
+
+    float Height[BallCount];
+    float ImpactVelocityStart = sqrt(-2 * Gravity * StartHeight);
+    float ImpactVelocity[BallCount];
+    float TimeSinceLastBounce[BallCount];
+    int   Position[BallCount];
+    long  ClockTimeSinceLastBounce[BallCount];
+    float Dampening[BallCount];
+
+    for (int i = 0; i < BallCount; i++) {
+        ClockTimeSinceLastBounce[i] = millis();
+        Height[i] = StartHeight;
+        Position[i] = 0;
+        ImpactVelocity[i] = ImpactVelocityStart;
+        TimeSinceLastBounce[i] = 0;
+        Dampening[i] = 0.90 - float(i) / pow(BallCount, 2);
+    }
+
+    // run for 30 seconds
+    long start = millis();
+    while (millis() < start + 30000) {
+        //if (CheckCancel())
+        //    return;
+        for (int i = 0; i < BallCount; i++) {
+            //if (CheckCancel())
+            //    return;
+            TimeSinceLastBounce[i] = millis() - ClockTimeSinceLastBounce[i];
+            Height[i] = 0.5 * Gravity * pow(TimeSinceLastBounce[i] / (1000 + frameHold * 100), 2.0) + ImpactVelocity[i] * TimeSinceLastBounce[i] / (1000 + frameHold * 100);
+
+            if (Height[i] < 0) {
+                Height[i] = 0;
+                ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
+                ClockTimeSinceLastBounce[i] = millis();
+
+                if (ImpactVelocity[i] < 0.01) {
+                    ImpactVelocity[i] = ImpactVelocityStart;
+                }
+            }
+            Position[i] = round(Height[i] * (stripLength - 1) / StartHeight);
+        }
+
+        for (int i = 0; i < BallCount; i++) {
+            //if (CheckCancel())
+                //return;
+            leds[Position[i]] = CRGB(colors[i][0], colors[i][1], colors[i][2]);
+        }
+        FastLED.show();
+        FastLED.clear();
+    }
 }
 
 // Gramma Correction (Defalt Gamma = 2.8)
