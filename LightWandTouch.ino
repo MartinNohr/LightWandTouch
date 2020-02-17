@@ -58,10 +58,10 @@ bool bScaleHeight = false;                // scale the Y values to fit the numbe
 bool bCancelRun = false;                  // set to cancel a running job
 bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
 SdFile dataFile;
-String CurrentFilename = "";
 int CurrentFileIndex = 0;
 int NumberOfFiles = 0;
 String FileNames[200];
+bool bShowBuiltInTests = false;
 
 // The menu structures
 enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eBool, eText, eMenu, eExit };
@@ -72,6 +72,8 @@ struct MenuItem {
     void(*function)(MenuItem*);
     void* value;
     int min, max;
+    char* on;   // for boolean
+    char* off;
 } ;
 typedef MenuItem MenuItem;
 #define LINEHEIGHT 36
@@ -97,7 +99,7 @@ MenuItem MainMenu[] = {
     {eText,   ILI9341_BLACK,"File Chooser",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eText,   ILI9341_BLACK,"Built-in Images",TestCylon},
+    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"ON","OFF"},
     {eText,   ILI9341_BLACK,"Settings"},
     // make sure this one is last
     {eTerminate}
@@ -191,7 +193,7 @@ void loop()
         tft.fillScreen(ILI9341_BLUE);
         tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
         tft.setCursor(0, 12);
-        tft.print(currentFolder + CurrentFilename);
+        tft.print(currentFolder + FileNames[CurrentFileIndex]);
         for (int x = 0; x <= 100; ++x) {
             int wide = map(x, 0, 100, 0, tft.width() - 1);
             tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
@@ -214,6 +216,7 @@ void loop()
             switch (currentMenu[ix].op) {
             case eText:
             case eTextInt:
+            case eBool:
                 if (currentMenu[ix].function) {
                     Serial.println(ix);
                     (*currentMenu[ix].function)(&currentMenu[ix]);
@@ -251,7 +254,7 @@ void ShowGo()
 {
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.print(currentFolder + CurrentFilename.substring(0, CurrentFilename.lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
+    tft.print((bShowBuiltInTests ? String("Internal:") : currentFolder) + FileNames[CurrentFileIndex].substring(0, FileNames[CurrentFileIndex].lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
@@ -306,7 +309,6 @@ void ShowMenu(struct MenuItem* menu)
             break;
         case eTextInt:
         case eText:
-        case eBool:
             // increment displayable lines
             y += LINEHEIGHT;
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
@@ -314,6 +316,20 @@ void ShowMenu(struct MenuItem* menu)
             if (menu->value) {
                 char line[100];
                 sprintf(line, menu->text, *(int*)menu->value);
+                tft.print(line);
+            }
+            else {
+                tft.print(menu->text);
+            }
+            break;
+        case eBool:
+            // increment displayable lines
+            y += LINEHEIGHT;
+            tft.setTextColor(ILI9341_WHITE, menu->back_color);
+            tft.setCursor(x, y);
+            if (menu->value) {
+                char line[100];
+                sprintf(line, menu->text, *(bool*)menu->value?menu->on:menu->off);
                 tft.print(line);
             }
             else {
@@ -332,6 +348,32 @@ void ShowMenu(struct MenuItem* menu)
     }
 }
 
+// switch between SD and built-ins
+void ToggleFilesBuiltin(MenuItem* menu)
+{
+    bool lastval = bShowBuiltInTests;
+    ToggleBool(menu);
+    if (lastval != bShowBuiltInTests) {
+        if (bShowBuiltInTests) {
+            // list the builtin ones
+            FileNames[0] = "Cylon";
+            FileNames[1] = "Meteor";
+            NumberOfFiles = 2;
+            CurrentFileIndex = 0;
+        }
+        else {
+            // read the SD
+            GetFileNamesFromSD(currentFolder);
+        }
+    }
+}
+
+// toggle a boolean value
+void ToggleBool(MenuItem* menu)
+{
+    bool* pb = (bool*)menu->value;
+    *pb = !*pb;
+}
 // get integer values
 void GetIntegerValue(MenuItem* menu)
 {
@@ -407,7 +449,6 @@ void EnterFileName(MenuItem* menu)
             else {
                 // just a file, set the current value
                 CurrentFileIndex = row;
-                CurrentFilename = FileNames[CurrentFileIndex];
                 done = true;
             }
         }
@@ -539,7 +580,6 @@ void setupSDcard() {
 //    lcd.print("Reading SD...   ");
     //delay(500);
     GetFileNamesFromSD(currentFolder);
-    CurrentFilename = FileNames[CurrentFileIndex];
     //DisplayCurrentFilename();
 }
 
@@ -624,7 +664,7 @@ int CompareStrings(String one, String two)
 
 void TestCylon(MenuItem* pmenu)
 {
-    CylonBounce(255 * nStripBrightness / 100, 255, 0, 0, 4, frameHold, 50);
+    CylonBounce(255 * nStripBrightness / 100, 255, 0, 0, 10, frameHold, 50);
 }
 void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
@@ -659,3 +699,97 @@ void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int 
     delay(ReturnDelay);
     FastLED.clear(true);
 }
+
+void TestMeteor() {
+    byte brightness = (255 * nStripBrightness) / 100;
+    meteorRain(brightness, brightness, brightness, 10, 64, true, 30);
+}
+
+void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTrailDecay, boolean meteorRandomDecay, int SpeedDelay) {
+    FastLED.clear(true);
+
+    for (int i = 0; i < stripLength + stripLength; i++) {
+        //if (CheckCancel())
+        //    return;
+        // fade brightness all LEDs one step
+        for (int j = 0; j < stripLength; j++) {
+            //if (CheckCancel())
+            //    return;
+            if ((!meteorRandomDecay) || (random(10) > 5)) {
+                fadeToBlack(j, meteorTrailDecay);
+            }
+        }
+
+        // draw meteor
+        for (int j = 0; j < meteorSize; j++) {
+            //if (CheckCancel())
+            //    return;
+            if ((i - j < stripLength) && (i - j >= 0)) {
+                leds[i - j] = CRGB(red, green, blue);
+            }
+        }
+        FastLED.show();
+        delay(SpeedDelay);
+    }
+}
+
+void fadeToBlack(int ledNo, byte fadeValue) {
+    // FastLED
+    leds[ledNo].fadeToBlackBy(fadeValue);
+}
+
+// Gramma Correction (Defalt Gamma = 2.8)
+const uint8_t PROGMEM gammaR[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,
+    2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,
+    5,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,
+    9,  9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 14, 14, 14,
+   15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
+   23, 24, 24, 25, 25, 26, 27, 27, 28, 29, 29, 30, 31, 31, 32, 33,
+   33, 34, 35, 36, 36, 37, 38, 39, 40, 40, 41, 42, 43, 44, 45, 46,
+   46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+   62, 63, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 76, 78, 79, 80,
+   81, 83, 84, 85, 87, 88, 89, 91, 92, 94, 95, 97, 98, 99,101,102,
+  104,105,107,109,110,112,113,115,116,118,120,121,123,125,127,128,
+  130,132,134,135,137,139,141,143,145,146,148,150,152,154,156,158,
+  160,162,164,166,168,170,172,174,177,179,181,183,185,187,190,192,
+  194,196,199,201,203,206,208,210,213,215,218,220,223,225,227,230 };
+
+const uint8_t PROGMEM gammaG[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+
+const uint8_t PROGMEM gammaB[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,
+    2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,
+    4,  4,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  7,  7,  7,  8,
+    8,  8,  8,  9,  9,  9, 10, 10, 10, 10, 11, 11, 12, 12, 12, 13,
+   13, 13, 14, 14, 15, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 19,
+   20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28,
+   29, 30, 30, 31, 32, 32, 33, 34, 34, 35, 36, 37, 37, 38, 39, 40,
+   40, 41, 42, 43, 44, 44, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53,
+   54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70,
+   71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 83, 84, 85, 86, 88, 89,
+   90, 92, 93, 94, 96, 97, 98,100,101,103,104,106,107,109,110,112,
+  113,115,116,118,119,121,122,124,126,127,129,131,132,134,136,137,
+  139,141,143,144,146,148,150,152,153,155,157,159,161,163,165,167,
+  169,171,173,175,177,179,181,183,185,187,189,191,193,196,198,200 };
