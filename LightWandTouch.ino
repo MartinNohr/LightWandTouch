@@ -32,11 +32,9 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // wand settings
-#define OPEN_FOLDER_CHAR '\x7e'
-#define OPEN_PARENT_FOLDER_CHAR '\x7f'
-#define MAXFOLDERS 10
-String folders[MAXFOLDERS];
-int folderLevel = 0;
+#define NEXT_FOLDER_CHAR '~'
+#define PREVIOUS_FOLDER_CHAR '^'
+String currentFolder = "/";
 SdFat SD;
 char signature[]{ "MLW" };                // set to make sure saved values are valid
 int stripLength = 144;                    // Set the number of LEDs the LED Strip
@@ -117,8 +115,6 @@ void setup(void) {
     tft.fillScreen(ILI9341_BLACK);
     tft.setRotation(1);
 #if !CALIBRATE
-    // we're at the root folder
-    folders[folderLevel = 0] = String("/");
     setupSDcard();
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
@@ -168,7 +164,7 @@ void loop()
         tft.fillScreen(ILI9341_BLUE);
         tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
         tft.setCursor(0, 12);
-        tft.print(GetFilePath() + CurrentFilename);
+        tft.print(currentFolder + CurrentFilename);
         for (int x = 0; x <= 100; ++x) {
             int wide = map(x, 0, 100, 0, tft.width() - 1);
             tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
@@ -228,7 +224,7 @@ void ShowGo()
 {
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
-    tft.print(GetFilePath() + CurrentFilename.substring(0, CurrentFilename.lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
+    tft.print(currentFolder + CurrentFilename.substring(0, CurrentFilename.lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
@@ -360,10 +356,33 @@ void EnterFileName(MenuItem* menu)
             int row = (p.y - 20);
             row = constrain(row, 0, tft.height() - 1);
             row /= 50;
-            Serial.println("file#: " + String(row));
-            CurrentFileIndex = row + startindex;
-            CurrentFilename = FileNames[CurrentFileIndex];
-            done = true;
+            row += startindex;
+            String tmp = FileNames[row];
+            if (tmp[0] == NEXT_FOLDER_CHAR) {
+                tmp = tmp.substring(1);
+                // change folder, reload files
+                currentFolder += tmp + "/";
+                GetFileNamesFromSD(currentFolder);
+                EnterFileName(menu);
+                return;
+            }
+            else if (tmp[0] == PREVIOUS_FOLDER_CHAR) {
+                tmp = tmp.substring(1);
+                tmp = tmp.substring(0, tmp.length() - 1);
+                if (tmp.length() == 0)
+                    tmp = "/";
+                // change folder, reload files
+                currentFolder = tmp;
+                GetFileNamesFromSD(currentFolder);
+                EnterFileName(menu);
+                return;
+            }
+            else {
+                // just a file, set the current value
+                CurrentFileIndex = row;
+                CurrentFilename = FileNames[CurrentFileIndex];
+                done = true;
+            }
         }
         else {
             done = true;
@@ -492,7 +511,7 @@ void setupSDcard() {
 //    lcd.clear();
 //    lcd.print("Reading SD...   ");
     //delay(500);
-    GetFileNamesFromSD(folders[folderLevel]);
+    GetFileNamesFromSD(currentFolder);
     CurrentFilename = FileNames[CurrentFileIndex];
     //DisplayCurrentFilename();
 }
@@ -500,6 +519,7 @@ void setupSDcard() {
 // read the files from the card
 // look for start.lwc, and process it, but don't add it to the list
 bool GetFileNamesFromSD(String dir) {
+    Serial.println("getting files from: " + dir);
     String startfile;
     // Directory file.
     SdFile root;
@@ -516,7 +536,11 @@ bool GetFileNamesFromSD(String dir) {
     }
     if (dir != "/") {
         // add an arrow to go back
-        FileNames[NumberOfFiles++] = String(OPEN_PARENT_FOLDER_CHAR) + folders[folderLevel - 1];
+        String sdir = currentFolder.substring(0, currentFolder.length() - 1);
+        sdir = sdir.substring(0, sdir.lastIndexOf("/"));
+        if (sdir.length() == 0)
+            sdir = "/";
+        FileNames[NumberOfFiles++] = String(PREVIOUS_FOLDER_CHAR) + sdir;
     }
     while (file.openNext(&root, O_RDONLY)) {
         if (!file.isHidden()) {
@@ -524,7 +548,7 @@ bool GetFileNamesFromSD(String dir) {
             file.getName(buf, sizeof buf);
             //Serial.println("name: " + String(buf));
             if (file.isDir()) {
-                FileNames[NumberOfFiles] = String(OPEN_FOLDER_CHAR) + buf;
+                FileNames[NumberOfFiles] = String(NEXT_FOLDER_CHAR) + buf;
                 NumberOfFiles++;
             }
             else if (file.isFile()) {
@@ -569,17 +593,4 @@ int CompareStrings(String one, String two)
     one.toUpperCase();
     two.toUpperCase();
     return one.compareTo(two);
-}
-
-// build the folder path
-String GetFilePath()
-{
-    String path;
-    for (int ix = 0; ix <= folderLevel; ++ix) {
-        path += folders[ix];
-    }
-    if (path == "/")
-        return path;
-    else
-        return path + "/";
 }
