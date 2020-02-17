@@ -12,6 +12,12 @@
 #include <sdfat.h>
 #include <FastLED.h>
 
+#define DATA_PIN 31
+#define NUM_LEDS 144
+
+// Define the array of leds
+CRGB leds[NUM_LEDS];
+
 // This is calibration data for the raw touch data to the screen coordinates
 // since we rotated the screen these reverse x and y
 #define TS_MINX 226
@@ -79,7 +85,7 @@ MenuItem RepeatMenu[] = {
 };
 MenuItem WandMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,15,10000},
+    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
     {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
     {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
     {eExit,   ILI9341_BLACK,"Main Menu"},
@@ -91,7 +97,7 @@ MenuItem MainMenu[] = {
     {eText,   ILI9341_BLACK,"File Chooser",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eText,   ILI9341_BLACK,"Built-in Images"},
+    {eText,   ILI9341_BLACK,"Built-in Images",TestCylon},
     {eText,   ILI9341_BLACK,"Settings"},
     // make sure this one is last
     {eTerminate}
@@ -132,6 +138,27 @@ void setup(void) {
     //analogWrite(3, 255);
     //delay(2000);
 #endif
+    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+    // Turn the LED on, then pause
+    leds[0] = leds[1] = CRGB::Red;
+    leds[4] = leds[5] = CRGB::Green;
+    leds[8] = leds[9] = CRGB::Blue;
+    FastLED.setBrightness(nStripBrightness * 255 / 100);
+    for (int ix = 0; ix < 255; ++ix) {
+        FastLED.setBrightness(ix);
+        FastLED.show();
+    }
+    for (int ix = 255; ix; --ix) {
+        FastLED.setBrightness(ix);
+        FastLED.show();
+    }
+    //FastLED.show();
+    delay(500);
+    // Now turn the LED off, then pause
+    FastLED.clear(true);
+    //leds[0] = CRGB::Black;
+    //FastLED.show();
+    delay(500);
 }
 
 bool bMenuChanged = true;
@@ -593,4 +620,42 @@ int CompareStrings(String one, String two)
     one.toUpperCase();
     two.toUpperCase();
     return one.compareTo(two);
+}
+
+void TestCylon(MenuItem* pmenu)
+{
+    CylonBounce(255 * nStripBrightness / 100, 255, 0, 0, 4, frameHold, 50);
+}
+void CylonBounce(byte bright, byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
+{
+    FastLED.setBrightness(bright);
+    for (int i = 0; i < stripLength - EyeSize - 2; i++) {
+        //if (CheckCancel())
+        //    return;
+        FastLED.clear();
+        leds[i]=CRGB(red / 10, green / 10, blue / 10);
+        for (int j = 1; j <= EyeSize; j++) {
+            leds[i+j]=CRGB(red, green, blue);
+        }
+        leds[i+EyeSize+1]=CRGB( red / 10, green / 10, blue / 10);
+        FastLED.show();
+        delay(SpeedDelay);
+    }
+
+    delay(ReturnDelay);
+
+    for (int i = stripLength - EyeSize - 2; i > 0; i--) {
+        //if (CheckCancel())
+        //    return;
+        FastLED.clear();
+        leds[i]=CRGB(red / 10, green / 10, blue / 10);
+        for (int j = 1; j <= EyeSize; j++) {
+            leds[i+j]=CRGB(red, green, blue);
+        }
+        leds[i+EyeSize+1]=CRGB(red / 10, green / 10, blue / 10);
+        FastLED.show();
+        delay(SpeedDelay);
+    }
+    delay(ReturnDelay);
+    FastLED.clear(true);
 }
