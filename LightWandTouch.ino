@@ -486,6 +486,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
             // delete the last char
             result = result.substring(0, result.length() - 1);
             delchars = 1;
+            DisplayValueLine(text, result.toInt(), delchars);
         }
         for (int ix = 0; ix < 10; ++ix) {
             // check for match
@@ -495,8 +496,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
                     result = String("");
                     firstdigit = false;
                 }
-                if (result.toInt() < max)
-                    result += String(ix);
+                result += String(ix);
                 Serial.println("result: " + result);
                 DisplayValueLine(text, result.toInt(), delchars);
                 delchars = 0;
