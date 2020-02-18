@@ -1053,8 +1053,8 @@ bool GetFileNamesFromSD(String dir) {
     delay(500);
     isort(FileNames, NumberOfFiles);
     // see if we need to process the auto start file
-    //if (startfile.length())
-    //    ProcessConfigFile(startfile);
+    if (startfile.length())
+        ProcessConfigFile(startfile);
     return true;
 }
 
