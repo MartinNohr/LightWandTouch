@@ -636,7 +636,10 @@ void ShowMenu(struct MenuItem* menu)
             tft.setCursor(x, y);
             if (menu->value) {
                 char line[100];
-                sprintf(line, menu->text, *(int*)menu->value);
+                if (menu->op == eText)
+                    sprintf(line, menu->text, (char*)menu->value);
+                else
+                    sprintf(line, menu->text, *(int*)menu->value);
                 tft.print(line);
             }
             else {
@@ -682,10 +685,12 @@ void ToggleFilesBuiltin(MenuItem* menu)
                 // add each one
                 FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
             }
+            currentMenu = MainMenuInternal;
         }
         else {
             // read the SD
             GetFileNamesFromSD(currentFolder);
+            currentMenu = MainMenu;
         }
     }
 }
@@ -1128,7 +1133,7 @@ void TestBouncingBalls() {
         {128,128,128},
     };
 
-    BouncingColoredBalls(nBouncingBalls, colors);
+    BouncingColoredBalls(nBouncingBallsCount, colors);
 }
 
 void BouncingColoredBalls(int balls, byte colors[][3]) {
@@ -1154,14 +1159,14 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
 
     // run for 30 seconds
     long start = millis();
-    while (millis() < start + 30000) {
+    while (millis() < start + (nBouncingBallsRuntime * 1000)) {
         //if (CheckCancel())
         //    return;
         for (int i = 0; i < balls; i++) {
             //if (CheckCancel())
             //    return;
             TimeSinceLastBounce[i] = millis() - ClockTimeSinceLastBounce[i];
-            Height[i] = 0.5 * Gravity * pow(TimeSinceLastBounce[i] / (1000 + frameHold * 100), 2.0) + ImpactVelocity[i] * TimeSinceLastBounce[i] / (1000 + frameHold * 100);
+            Height[i] = 0.5 * Gravity * pow(TimeSinceLastBounce[i] / nBouncingBallsDecay, 2.0) + ImpactVelocity[i] * TimeSinceLastBounce[i] / nBouncingBallsDecay;
 
             if (Height[i] < 0) {
                 Height[i] = 0;

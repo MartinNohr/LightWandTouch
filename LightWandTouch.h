@@ -63,27 +63,16 @@ int NumberOfFiles = 0;
 String FileNames[200];
 bool bShowBuiltInTests = false;
 
-// built-in "files"
-struct BuiltInItem {
-    char* text;
-    void(*function)();
-};
-typedef BuiltInItem BuiltInItem;
-void RunningDot();
-void TestCylon();
-void TestMeteor();
-void TestBouncingBalls();
-// adjustment values
-int nBouncingBalls = 4;
-BuiltInItem BuiltInFiles[] = {
-    {"Running Dot",RunningDot},
-    {"Cylon",TestCylon},
-    {"Meteor",TestMeteor},
-    {"Bouncing Balls",TestBouncingBalls},
-};
-
 // The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eBool, eText, eMenu, eExit };
+enum eDisplayOperation {
+    eTerminate, // must be last
+    eClear,     // set screen background
+    eText,      // handle text with optional %s value
+    eTextInt,   // handle text with optional %d value
+    eBool,      // handle bool using %s and on/off values
+    eMenu,      // load another menu
+    eExit,      // closes this menu
+};
 struct MenuItem {
     enum eDisplayOperation op;
     int back_color;
@@ -101,6 +90,15 @@ void GetIntegerValue(MenuItem*);
 void ToggleBool(MenuItem*);
 void EnterFileName(MenuItem*);
 void ToggleFilesBuiltin(MenuItem*);
+
+void RunningDot();
+void TestCylon();
+void TestMeteor();
+void TestBouncingBalls();
+// adjustment values
+int nBouncingBallsCount = 4;
+int nBouncingBallsDecay = 1000;
+int nBouncingBallsRuntime = 20; // in seconds
 
 MenuItem RepeatMenu[] = {
     {eClear,  ILI9341_BLACK},
@@ -120,9 +118,19 @@ MenuItem WandMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem BouncingBallsMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,"Bouncing Balls"},
+    {eTextInt,ILI9341_BLACK,"Ball Count (1-8): %d",GetIntegerValue,&nBouncingBallsCount,1,8},
+    {eTextInt,ILI9341_BLACK,"Decay (500-10000): %d",GetIntegerValue,&nBouncingBallsDecay,500,10000},
+    {eTextInt,ILI9341_BLACK,"Runtime (seconds): %d",GetIntegerValue,&nBouncingBallsRuntime,1,10000},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Choose File",EnterFileName},
+    {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
@@ -130,10 +138,36 @@ MenuItem MainMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem MainMenuInternal[] = {
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,"Choose Internal File",EnterFileName},
+    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
+    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eText,   ILI9341_BLACK,"Settings"},
+    {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
+    // make sure this one is last
+    {eTerminate}
+};
+
 MenuItem* currentMenu = MainMenu;
 // a stack for menus so we can find our way back
 MenuItem* menustack[10];
 int menuLevel = 0;
+
+// built-in "files"
+struct BuiltInItem {
+    char* text;
+    void(*function)();
+    MenuItem* menu;     // not used yet, but might be used to set the correct menu
+};
+typedef BuiltInItem BuiltInItem;
+BuiltInItem BuiltInFiles[] = {
+    {"Running Dot",RunningDot},
+    {"Cylon",TestCylon},
+    {"Meteor",TestMeteor},
+    {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
+};
 
 int nMaxBackLight = 75;                 // maximum backlight to use in %
 int nMinBackLight = 25;                 // dimmest setting
