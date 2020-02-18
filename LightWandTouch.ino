@@ -53,7 +53,6 @@ bool StripDelay(void*)
     return false;
 }
 
-
 void setup(void) {
     tft.begin();
     delay(50);
@@ -251,14 +250,100 @@ void ProcessFileOrTest(int chainnumber)
     FastLED.clear(true);
 }
 
+// save or restore all the settings that are relevant
+// this is used when reading the LWC associated with a file
+bool SettingsSaveRestore(bool save)
+{
+    static void* memptr = NULL;
+    if (save) {
+        // get some memory and save the values
+        if (memptr)
+            free(memptr);
+        memptr = malloc(sizeof saveValueList);
+        if (!memptr)
+            return false;
+    }
+    void* blockptr = memptr;
+    for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
+        if (save) {
+            memcpy(blockptr, saveValueList[ix].val, saveValueList[ix].size);
+        }
+        else {
+            memcpy(saveValueList[ix].val, blockptr, saveValueList[ix].size);
+        }
+        blockptr = (void*)((byte*)blockptr + saveValueList[ix].size);
+    }
+    if (!save) {
+        // if it was saved, restore it and free the memory
+        if (memptr) {
+            free(memptr);
+            memptr = NULL;
+        }
+    }
+    return true;
+}
+
+// save some settings in the eeprom
+// if autoload is true, check the first flag, and load the rest if it is true
+void SaveSettings(bool save, bool autoload)
+{
+    void* blockpointer = (void*)NULL;
+    for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
+        if (save) {
+            eeprom_write_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+        }
+        else {  // load
+            // check signature
+            char svalue[sizeof signature];
+            eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
+            if (strncmp(svalue, signature, sizeof signature)) {
+                //lcd.clear();
+                //lcd.setCursor(0, 0);
+                //lcd.print("bad signature");
+                //lcd.setCursor(0, 1);
+                //lcd.print(svalue);
+                //delay(1000);
+                return;
+            }
+            eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+            // if autoload, exit if the save value is not true
+            if (autoload && ix == 0) {
+                if (!bAutoLoadSettings) {
+                    return;
+                }
+            }
+        }
+        blockpointer = (void*)((byte*)blockpointer + saveValueList[ix].size);
+    }
+    if (!save) {
+        int savedFileIndex = CurrentFileIndex;
+        //// we don't know the folder path, so just reset the folder level
+        //folderLevel = 0;
+        setupSDcard();
+        CurrentFileIndex = savedFileIndex;
+        // make sure file index isn't too big
+        if (CurrentFileIndex >= NumberOfFiles) {
+            CurrentFileIndex = 0;
+        }
+        //// check test number also
+        //if (nTestNumber >= MAXTEST) {
+        //    nTestNumber = 0;
+        //}
+    }
+    //lcd.clear();
+    //lcd.setCursor(0, 0);
+    //lcd.print(save ? "Settings Saved" : "Settings Loaded");
+    delay(1000);
+}
+
 void SendFile(String Filename) {
     char temp[14];
     Filename.toCharArray(temp, 14);
     // see if there is an associated config file
     String cfFile = temp;
     cfFile = MakeLWCFilename(cfFile);
-    //SettingsSaveRestore(true);
-    //ProcessConfigFile(cfFile);
+    SettingsSaveRestore(true);
+    ProcessConfigFile(cfFile);
     String fn = currentFolder + temp;
     dataFile.open(fn.c_str(), O_READ);
     // if the file is available send it to the LED's
@@ -277,7 +362,7 @@ void SendFile(String Filename) {
         //setupSDcard();
         return;
     }
-    //SettingsSaveRestore(false);
+    SettingsSaveRestore(false);
 }
 
 void ReadAndDisplayFile() {
@@ -1162,7 +1247,7 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
 
     // run for 30 seconds
     long start = millis();
-    while (millis() < start + (nBouncingBallsRuntime * 1000)) {
+    while (millis() < start + ((long)nBouncingBallsRuntime * 1000)) {
         //if (CheckCancel())
         //    return;
         for (int i = 0; i < balls; i++) {

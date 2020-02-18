@@ -68,6 +68,29 @@ int nBackLightSeconds = 10;             // how long to leave the backlight on be
 volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
 volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
 
+struct saveValues {
+    void* val;
+    int size;
+};
+const saveValues saveValueList[] = {
+    {&signature, sizeof signature},
+    {&bAutoLoadSettings, sizeof bAutoLoadSettings},
+    {&nStripBrightness, sizeof nStripBrightness},
+    {&frameHold, sizeof frameHold},
+    {&startDelay, sizeof startDelay},
+    {&repeat, sizeof repeat},
+    {&repeatCount, sizeof repeatCount},
+    {&repeatDelay, sizeof repeatDelay},
+    {&bGammaCorrection, sizeof bGammaCorrection},
+    {&stripLength, sizeof stripLength},
+    {&nBackLightSeconds, sizeof nBackLightSeconds},
+    {&nMaxBackLight, sizeof nMaxBackLight},
+    {&CurrentFileIndex,sizeof CurrentFileIndex},
+    {&bShowBuiltInTests,sizeof(bShowBuiltInTests)},
+    {&bScaleHeight,sizeof bScaleHeight},
+    {&bChainFiles,sizeof bChainFiles},
+};
+
 // The menu structures
 enum eDisplayOperation {
     eTerminate, // must be last
