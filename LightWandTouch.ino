@@ -283,59 +283,6 @@ bool SettingsSaveRestore(bool save)
     return true;
 }
 
-// save some settings in the eeprom
-// if autoload is true, check the first flag, and load the rest if it is true
-void SaveSettings(bool save, bool autoload)
-{
-    void* blockpointer = (void*)NULL;
-    for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
-        if (save) {
-            eeprom_write_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
-        }
-        else {  // load
-            // check signature
-            char svalue[sizeof signature];
-            eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
-            if (strncmp(svalue, signature, sizeof signature)) {
-                //lcd.clear();
-                //lcd.setCursor(0, 0);
-                //lcd.print("bad signature");
-                //lcd.setCursor(0, 1);
-                //lcd.print(svalue);
-                //delay(1000);
-                return;
-            }
-            eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
-            // if autoload, exit if the save value is not true
-            if (autoload && ix == 0) {
-                if (!bAutoLoadSettings) {
-                    return;
-                }
-            }
-        }
-        blockpointer = (void*)((byte*)blockpointer + saveValueList[ix].size);
-    }
-    if (!save) {
-        int savedFileIndex = CurrentFileIndex;
-        //// we don't know the folder path, so just reset the folder level
-        //folderLevel = 0;
-        setupSDcard();
-        CurrentFileIndex = savedFileIndex;
-        // make sure file index isn't too big
-        if (CurrentFileIndex >= NumberOfFiles) {
-            CurrentFileIndex = 0;
-        }
-        //// check test number also
-        //if (nTestNumber >= MAXTEST) {
-        //    nTestNumber = 0;
-        //}
-    }
-    //lcd.clear();
-    //lcd.setCursor(0, 0);
-    //lcd.print(save ? "Settings Saved" : "Settings Loaded");
-    delay(1000);
-}
-
 void SendFile(String Filename) {
     char temp[14];
     Filename.toCharArray(temp, 14);
@@ -1053,7 +1000,7 @@ bool GetFileNamesFromSD(String dir) {
     delay(500);
     isort(FileNames, NumberOfFiles);
     // see if we need to process the auto start file
-    if (startfile.length())
+    if (bAutoLoadStart && startfile.length())
         ProcessConfigFile(startfile);
     return true;
 }

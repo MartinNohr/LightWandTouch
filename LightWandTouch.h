@@ -53,7 +53,7 @@ int repeatDelay = 0;                      // Variable for delay between repeats
 int repeatCount = 1;                      // Variable to keep track of number of repeats
 int nStripBrightness = 10;                // Variable and default for the Brightness of the strip
 bool bGammaCorrection = true;             // set to use the gamma table
-bool bAutoLoadSettings = false;           // set to automatically load saved settings
+bool bAutoLoadStart = true;               // set to automatically load the start.lwc file
 bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
 bool bCancelRun = false;                  // set to cancel a running job
 bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
@@ -73,22 +73,22 @@ struct saveValues {
     int size;
 };
 const saveValues saveValueList[] = {
-    {&signature, sizeof signature},
-    {&bAutoLoadSettings, sizeof bAutoLoadSettings},
-    {&nStripBrightness, sizeof nStripBrightness},
-    {&frameHold, sizeof frameHold},
-    {&startDelay, sizeof startDelay},
-    {&repeat, sizeof repeat},
-    {&repeatCount, sizeof repeatCount},
-    {&repeatDelay, sizeof repeatDelay},
-    {&bGammaCorrection, sizeof bGammaCorrection},
-    {&stripLength, sizeof stripLength},
-    {&nBackLightSeconds, sizeof nBackLightSeconds},
-    {&nMaxBackLight, sizeof nMaxBackLight},
-    {&CurrentFileIndex,sizeof CurrentFileIndex},
+    {&signature, sizeof(signature)},
+    {&bAutoLoadStart, sizeof(bAutoLoadStart)},
+    {&nStripBrightness, sizeof(nStripBrightness)},
+    {&frameHold, sizeof(frameHold)},
+    {&startDelay, sizeof(startDelay)},
+    {&repeat, sizeof(repeat)},
+    {&repeatCount, sizeof(repeatCount)},
+    {&repeatDelay, sizeof(repeatDelay)},
+    {&bGammaCorrection, sizeof(bGammaCorrection)},
+    {&stripLength, sizeof(stripLength)},
+    {&nBackLightSeconds, sizeof(nBackLightSeconds)},
+    {&nMaxBackLight, sizeof(nMaxBackLight)},
+    {&CurrentFileIndex,sizeof(CurrentFileIndex)},
     {&bShowBuiltInTests,sizeof(bShowBuiltInTests)},
-    {&bScaleHeight,sizeof bScaleHeight},
-    {&bChainFiles,sizeof bChainFiles},
+    {&bScaleHeight,sizeof(bScaleHeight)},
+    {&bChainFiles,sizeof(bChainFiles)},
 };
 
 // The menu structures
