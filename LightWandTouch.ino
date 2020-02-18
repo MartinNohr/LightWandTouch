@@ -3,141 +3,8 @@
 */
 // set this to calibrate the touch screen
 #define CALIBRATE 0
+#include "LightWandTouch.h"
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <SPI.h>
-#include <Wire.h>      // this is needed even though we aren't using it
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_STMPE610.h>
-#include <sdfat.h>
-#include <FastLED.h>
-#include <timer.h>
-
-#define DATA_PIN 31
-#define NUM_LEDS 144
-int AuxButton = 35;                       // Aux Select Button Pin
-int g = 0;                                // Variable for the Green Value
-int b = 0;                                // Variable for the Blue Value
-int r = 0;                                // Variable for the Red Value
-
-// Define the array of leds
-CRGB leds[NUM_LEDS];
-
-// This is calibration data for the raw touch data to the screen coordinates
-// since we rotated the screen these reverse x and y
-#define TS_MINX 226
-#define TS_MINY 166
-#define TS_MAXX 3861
-#define TS_MAXY 3790
-
-// The STMPE610 uses hardware SPI on the shield, and #8
-#define STMPE_CS 8
-Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
-
-#define SDcsPin 4                        // SD card CS pin
-
-// The display also uses hardware SPI, plus #9 & #10
-#define TFT_CS 10
-#define TFT_DC 9
-#define TFT_BRIGHT 3
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-
-// wand settings
-#define NEXT_FOLDER_CHAR '~'
-#define PREVIOUS_FOLDER_CHAR '^'
-String currentFolder = "/";
-SdFat SD;
-char signature[]{ "MLW" };                // set to make sure saved values are valid
-int stripLength = 144;                    // Set the number of LEDs the LED Strip
-int frameHold = 10;                       // default for the frame delay 
-int lastMenuItem = -1;                    // check to see if we need to redraw menu
-//int menuItem = mFirstMenu;                // Variable for current main menu selection
-int startDelay = 0;                       // Variable for delay between button press and start of light sequence, in seconds
-int repeat = 0;                           // Variable to select auto repeat (until select button is pressed again)
-int repeatDelay = 0;                      // Variable for delay between repeats
-int repeatCount = 1;                      // Variable to keep track of number of repeats
-int nStripBrightness = 10;                // Variable and default for the Brightness of the strip
-bool bGammaCorrection = true;             // set to use the gamma table
-bool bAutoLoadSettings = false;           // set to automatically load saved settings
-bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
-bool bCancelRun = false;                  // set to cancel a running job
-bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
-SdFile dataFile;
-int CurrentFileIndex = 0;
-int NumberOfFiles = 0;
-String FileNames[200];
-bool bShowBuiltInTests = false;
-
-// built-in "files"
-struct BuiltInItem {
-    char* text;
-    void(*function)();
-};
-typedef BuiltInItem BuiltInItem;
-BuiltInItem BuiltInFiles[] = {
-    {"Running Dot",RunningDot},
-    {"Cylon",TestCylon},
-    {"Meteor",TestMeteor},
-    {"Bouncing Balls",TestBouncingBalls},
-};
-
-// The menu structures
-enum eDisplayOperation { eTerminate, eNoop, eClear, eTextInt, eBool, eText, eMenu, eExit };
-struct MenuItem {
-    enum eDisplayOperation op;
-    int back_color;
-    char* text;
-    void(*function)(MenuItem*);
-    void* value;
-    int min, max;
-    char* on;   // for boolean
-    char* off;
-} ;
-typedef MenuItem MenuItem;
-#define LINEHEIGHT 36
-MenuItem RepeatMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
-    {eTextInt,ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
-    // make sure this one is last
-    {eTerminate}
-};
-MenuItem WandMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
-    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
-    {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
-    {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
-    // make sure this one is last
-    {eTerminate}
-};
-MenuItem MainMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Choose File",EnterFileName},
-    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Settings"},
-    // make sure this one is last
-    {eTerminate}
-};
-MenuItem* currentMenu = MainMenu;
-// a stack for menus so we can find our way back
-MenuItem* menustack[10];
-int menuLevel = 0;
-
-int nMaxBackLight = 75;                 // maximum backlight to use in %
-int nBackLightSeconds = 10;             // how long to leave the backlight on before dimming
-volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
-volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
-
-// timers to run things
-auto EventTimers = timer_create_default();
-// set this to the delay time while we get the next frame
-bool bStripWaiting = false;
-// this gets called every second/TIMERSTEPS
 #define TIMERSTEPS 10
 bool BackLightControl(void*)
 {
@@ -267,9 +134,9 @@ void setup(void) {
     delay(1000);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
-    //analogWrite(3, 10);
+    //analogWrite(TFT_BRIGHT, 10);
     //delay(2000);
-    //analogWrite(3, 255);
+    //analogWrite(TFT_BRIGHT, 255);
     //delay(2000);
     digitalWrite(LED_BUILTIN, HIGH);
     //SaveSettings(false, true);
@@ -623,7 +490,7 @@ int readByte(bool clear) {
         return 0;
     }
     // TODO: this needs to align with 512 byte boundaries
-    if (filebufsize == 0 || fileindex >= sizeof filebuf) {
+    if (filebufsize == 0 || fileindex >= sizeof(filebuf)) {
         filePosition = dataFile.curPosition();
         //// if not on 512 boundary yet, just return a byte
         //if ((filePosition % 512) && filebufsize == 0) {
@@ -632,7 +499,7 @@ int readByte(bool clear) {
         //}
         // read a block
 //        Serial.println("block read");
-        filebufsize = dataFile.read(filebuf, sizeof filebuf);
+        filebufsize = dataFile.read(filebuf, sizeof(filebuf));
         fileindex = 0;
     }
     return filebuf[fileindex++];
@@ -691,7 +558,7 @@ bool ProcessConfigFile(String filename)
     if (rdfile.available()) {
         String line, command, args;
         char buf[100];
-        while (rdfile.fgets(buf, sizeof buf, "\n")) {
+        while (rdfile.fgets(buf, sizeof(buf), "\n")) {
             line = String(buf);
             // read the lines and do what they say
             int ix = line.indexOf('=', 0);
@@ -871,7 +738,7 @@ void ToggleFilesBuiltin(MenuItem* menu)
         if (bShowBuiltInTests) {
             CurrentFileIndex = 0;
             NumberOfFiles = 0;
-            for (NumberOfFiles = 0; NumberOfFiles < sizeof BuiltInFiles / sizeof * BuiltInFiles; ++NumberOfFiles) {
+            for (NumberOfFiles = 0; NumberOfFiles < sizeof(BuiltInFiles) / sizeof(*BuiltInFiles); ++NumberOfFiles) {
                 // add each one
                 FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
             }
@@ -1128,7 +995,7 @@ bool GetFileNamesFromSD(String dir) {
     while (file.openNext(&root, O_RDONLY)) {
         if (!file.isHidden()) {
             char buf[100];
-            file.getName(buf, sizeof buf);
+            file.getName(buf, sizeof(buf));
             //Serial.println("name: " + String(buf));
             if (file.isDir()) {
                 FileNames[NumberOfFiles] = String(NEXT_FOLDER_CHAR) + buf;
@@ -1303,37 +1170,46 @@ void RunningDot()
     }
 }
 
-#define BallCount 4
+/*
+int* array = calloc(m*n, sizof(int));
+
+array[i*n + j]
+*/
+// up to 8 bouncing balls
 void TestBouncingBalls() {
-    byte colors[BallCount][3] = {
+    byte colors[][3] = {
         {255, 0, 0},
         {255, 255, 255},
         {0, 0, 255},
-        {0, 255, 0}
+        {0, 255, 0},
+        {255,255,0},
+        {0,255,255},
+        {255,0,255},
+        {128,128,128},
     };
 
-    BouncingColoredBalls(colors);
+    BouncingColoredBalls(nBouncingBalls, colors);
 }
 
-void BouncingColoredBalls(byte colors[][3]) {
+void BouncingColoredBalls(int balls, byte colors[][3]) {
     float Gravity = -9.81;
     int StartHeight = 1;
 
-    float Height[BallCount];
+    float* Height = (float*)calloc(balls, sizeof(float));
+    float* ImpactVelocity = (float*)calloc(balls, sizeof(float));
+    float* TimeSinceLastBounce = (float*)calloc(balls, sizeof(float));
+    int* Position = (int*)calloc(balls, sizeof(int));
+    long* ClockTimeSinceLastBounce = (long*)calloc(balls, sizeof(long));
+    float* Dampening = (float*)calloc(balls, sizeof(float));
     float ImpactVelocityStart = sqrt(-2 * Gravity * StartHeight);
-    float ImpactVelocity[BallCount];
-    float TimeSinceLastBounce[BallCount];
-    int   Position[BallCount];
-    long  ClockTimeSinceLastBounce[BallCount];
-    float Dampening[BallCount];
 
-    for (int i = 0; i < BallCount; i++) {
+    for (int i = 0; i < balls; i++) {
         ClockTimeSinceLastBounce[i] = millis();
         Height[i] = StartHeight;
         Position[i] = 0;
         ImpactVelocity[i] = ImpactVelocityStart;
         TimeSinceLastBounce[i] = 0;
-        Dampening[i] = 0.90 - float(i) / pow(BallCount, 2);
+        Dampening[i] = 0.90 - float(i) / pow(balls, 2);
     }
 
     // run for 30 seconds
@@ -1341,7 +1217,7 @@ void BouncingColoredBalls(byte colors[][3]) {
     while (millis() < start + 30000) {
         //if (CheckCancel())
         //    return;
-        for (int i = 0; i < BallCount; i++) {
+        for (int i = 0; i < balls; i++) {
             //if (CheckCancel())
             //    return;
             TimeSinceLastBounce[i] = millis() - ClockTimeSinceLastBounce[i];
@@ -1359,7 +1235,7 @@ void BouncingColoredBalls(byte colors[][3]) {
             Position[i] = round(Height[i] * (stripLength - 1) / StartHeight);
         }
 
-        for (int i = 0; i < BallCount; i++) {
+        for (int i = 0; i < balls; i++) {
             //if (CheckCancel())
                 //return;
             leds[Position[i]] = CRGB(colors[i][0], colors[i][1], colors[i][2]);
@@ -1367,4 +1243,10 @@ void BouncingColoredBalls(byte colors[][3]) {
         FastLED.show();
         FastLED.clear();
     }
+    free(Height);
+    free(ImpactVelocity);
+    free(TimeSinceLastBounce);
+    free(Position);
+    free(ClockTimeSinceLastBounce);
+    free(Dampening);
 }
