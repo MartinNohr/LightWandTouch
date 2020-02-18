@@ -6,6 +6,7 @@
 #include "LightWandTouch.h"
 
 #define TIMERSTEPS 10
+// this gets called every second/TIMERSTEPS
 bool BackLightControl(void*)
 {
     static int light;
@@ -35,8 +36,8 @@ bool BackLightControl(void*)
         --timer;
     if (fade) {
         light -= fade;
-        if (light < 0) {
-            light = 0;
+        if (light < nMinBackLight) {
+            light = nMinBackLight;
             bBackLightOn = false;
             analogWrite(TFT_BRIGHT, light);
         }
@@ -52,61 +53,6 @@ bool StripDelay(void*)
     return false;
 }
 
-// Gramma Correction (Defalt Gamma = 2.8)
-const uint8_t /*PROGMEM*/ gammaR[] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,
-    2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,
-    5,  5,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,
-    9,  9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 14, 14, 14,
-   15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
-   23, 24, 24, 25, 25, 26, 27, 27, 28, 29, 29, 30, 31, 31, 32, 33,
-   33, 34, 35, 36, 36, 37, 38, 39, 40, 40, 41, 42, 43, 44, 45, 46,
-   46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
-   62, 63, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 76, 78, 79, 80,
-   81, 83, 84, 85, 87, 88, 89, 91, 92, 94, 95, 97, 98, 99,101,102,
-  104,105,107,109,110,112,113,115,116,118,120,121,123,125,127,128,
-  130,132,134,135,137,139,141,143,145,146,148,150,152,154,156,158,
-  160,162,164,166,168,170,172,174,177,179,181,183,185,187,190,192,
-  194,196,199,201,203,206,208,210,213,215,218,220,223,225,227,230 };
-
-const uint8_t /*PROGMEM*/ gammaG[] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
-    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
-    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
-   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
-   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
-   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
-   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
-   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
-   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
-   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
-  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
-  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
-  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
-  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
-
-
-const uint8_t /*PROGMEM*/ gammaB[] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,
-    2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,
-    4,  4,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  7,  7,  7,  8,
-    8,  8,  8,  9,  9,  9, 10, 10, 10, 10, 11, 11, 12, 12, 12, 13,
-   13, 13, 14, 14, 15, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 19,
-   20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28,
-   29, 30, 30, 31, 32, 32, 33, 34, 34, 35, 36, 37, 37, 38, 39, 40,
-   40, 41, 42, 43, 44, 44, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53,
-   54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70,
-   71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 83, 84, 85, 86, 88, 89,
-   90, 92, 93, 94, 96, 97, 98,100,101,103,104,106,107,109,110,112,
-  113,115,116,118,119,121,122,124,126,127,129,131,132,134,136,137,
-  139,141,143,144,146,148,150,152,153,155,157,159,161,163,165,167,
-  169,171,173,175,177,179,181,183,185,187,189,191,193,196,198,200 };
 
 void setup(void) {
     tft.begin();
@@ -136,7 +82,7 @@ void setup(void) {
     pinMode(TFT_BRIGHT, OUTPUT);
     //analogWrite(TFT_BRIGHT, 10);
     //delay(2000);
-    //analogWrite(TFT_BRIGHT, 255);
+    analogWrite(TFT_BRIGHT, 255);
     //delay(2000);
     digitalWrite(LED_BUILTIN, HIGH);
     //SaveSettings(false, true);
@@ -158,10 +104,8 @@ void setup(void) {
         FastLED.setBrightness(ix);
         FastLED.show();
     }
-    delay(500);
-    // Now turn the LED off, then pause
+    // Now turn the LED off
     FastLED.clear(true);
-    delay(500);
 }
 
 bool bMenuChanged = true;
@@ -185,7 +129,7 @@ void loop()
     }
 
     // Retrieve a point  
-    TS_Point p = ReadTouch(false);
+    TS_Point p = ReadTouch();
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
@@ -531,14 +475,13 @@ void getRGBwithGamma() {
     }
 }
 
-//void fixRGBwithGamma(byte* rp, byte* gp, byte* bp) {
-//    *gp = strip.gamma8(*gp) / (101 - nStripBrightness);
-//    *bp = strip.gamma8(*bp) / (101 - nStripBrightness);
-//    *rp = strip.gamma8(*rp) / (101 - nStripBrightness);
-//    //*gp = gamma(*gp) / (101 - nStripBrightness);
-//    //*bp = gamma(*bp) / (101 - nStripBrightness);
-//    //*rp = gamma(*rp) / (101 - nStripBrightness);
-//}
+void fixRGBwithGamma(byte* rp, byte* gp, byte* bp) {
+    if (bGammaCorrection) {
+        *gp = gammaG[*gp];
+        *bp = gammaB[*bp];
+        *rp = gammaR[*rp];
+    }
+}
 
 // create the associated LWC name
 String MakeLWCFilename(String filename)
@@ -643,20 +586,17 @@ void ShowGo()
 }
 
 // Top left is origin, down is y, right is x
-TS_Point ReadTouch(bool wait)
+TS_Point ReadTouch()
 {
-    if (wait) {
-        while (!ts.touched())
-            ;
-    }
-    delay(10);
     // Retrieve a point  
     TS_Point p = ts.getPoint();
     // eat the ones with not enough pressure
     while (p.z < 35 || p.z > 250) {
         //while (p.z < 35 || p.z > 250 || p.y < 100 || p.x < 100) {
         p = ts.getPoint();
+        EventTimers.tick();
     }
+    bTurnOnBacklight = true;
     Serial.print("X = "); Serial.print(p.x);
     Serial.print("\tY = "); Serial.print(p.y);
     Serial.print("\tPressure = "); Serial.println(p.z);
@@ -669,7 +609,7 @@ TS_Point ReadTouch(bool wait)
     Serial.print(", "); Serial.print(y);
     Serial.println(")");
     while (ts.touched())
-        ;
+        EventTimers.tick();
     ts.getPoint();
     p.x = x;
     p.y = y;
@@ -792,9 +732,9 @@ void EnterFileName(MenuItem* menu)
         tft.setCursor(tft.width() - 35, tft.height() / 2 - 10);
         tft.print("X");
         while (!ts.touched()) {
-            ;
+            EventTimers.tick();
         }
-        p = ReadTouch(true);
+        p = ReadTouch();
         if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, 25, 20)) {
             startindex -= 5;
         }
@@ -879,7 +819,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     bool done = false;
     // wait for no fingers
     while (ts.touched())
-        ;
+        EventTimers.tick();
     tft.fillRect(0, 0, 319, 239, ILI9341_BLUE);
     DisplayValueLine(text, result.toInt(), 0);
     tft.setTextSize(5);
@@ -894,7 +834,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     TS_Point p;
     int delchars = 0;   // to wipe out digits when the number is shorter on the line
     while (!done) {
-        p = ReadTouch(false);
+        p = ReadTouch();
         // ok
         if (p.x < 50 && p.y > tft.height() - 40) {
             *pval = result.toInt();
