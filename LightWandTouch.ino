@@ -184,6 +184,11 @@ void loop()
             break;
         }
     }
+    // if no match, and we are in a submenu, go back one level
+    if (!bMenuChanged && menuLevel) {
+        bMenuChanged = true;
+        currentMenu = menustack[--menuLevel];
+    }
     
 #else
     tft.fillCircle(5, 5, 5, ILI9341_WHITE);
@@ -405,8 +410,6 @@ uint32_t readLong() {
 
     return retValue;
 }
-
-
 
 uint16_t readInt() {
     byte incomingbyte;

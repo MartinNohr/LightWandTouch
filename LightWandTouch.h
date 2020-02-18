@@ -62,6 +62,11 @@ int CurrentFileIndex = 0;
 int NumberOfFiles = 0;
 String FileNames[200];
 bool bShowBuiltInTests = false;
+int nMaxBackLight = 75;                 // maximum backlight to use in %
+int nMinBackLight = 25;                 // dimmest setting
+int nBackLightSeconds = 10;             // how long to leave the backlight on before dimming
+volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
+volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
 
 // The menu structures
 enum eDisplayOperation {
@@ -128,13 +133,21 @@ MenuItem BouncingBallsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem DisplayMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eTextInt,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
+    {eTextInt,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Settings"},
+    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     // make sure this one is last
     {eTerminate}
 };
@@ -144,7 +157,7 @@ MenuItem MainMenuInternal[] = {
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Settings"},
+    {eText,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
     // make sure this one is last
     {eTerminate}
@@ -168,12 +181,6 @@ BuiltInItem BuiltInFiles[] = {
     {"Meteor",TestMeteor},
     {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
 };
-
-int nMaxBackLight = 75;                 // maximum backlight to use in %
-int nMinBackLight = 25;                 // dimmest setting
-int nBackLightSeconds = 10;             // how long to leave the backlight on before dimming
-volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
-volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
 
 // timers to run things
 auto EventTimers = timer_create_default();
