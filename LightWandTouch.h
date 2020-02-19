@@ -97,13 +97,15 @@ const saveValues saveValueList[] = {
 
 // The menu structures
 enum eDisplayOperation {
-    eTerminate, // must be last in a menu
     eClear,     // set screen background
     eText,      // handle text with optional %s value
     eTextInt,   // handle text with optional %d value
     eBool,      // handle bool using %s and on/off values
     eMenu,      // load another menu
     eExit,      // closes this menu
+    eSkipTrue,  // skip the next menu item if boolean is true
+    eSkipFalse, // skip the next menu item if boolean is false
+    eTerminate, // must be last in a menu
 };
 struct MenuItem {
     enum eDisplayOperation op;
@@ -186,25 +188,28 @@ MenuItem StartFileMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem MainMenuInternal[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Choose Internal File",EnterFileName},
-    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
-    {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
-    // make sure this one is last
-    {eTerminate}
-};
+//MenuItem MainMenuInternal[] = {
+//    {eClear,  ILI9341_BLACK},
+//    {eText,   ILI9341_BLACK,"Choose Internal File",EnterFileName},
+//    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+//    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
+//    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+//    {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
+//    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
+//    // make sure this one is last
+//    {eTerminate}
+//};
 MenuItem MainMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
-    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
-    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
+    {eClear,    ILI9341_BLACK},
+    {eText,     ILI9341_BLACK,"Choose SD File",EnterFileName},
+    {eMenu,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+    {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
+    {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
+    {eMenu,     ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
+    {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
+    {eMenu,     ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
+    {eMenu,     ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     // make sure this one is last
     {eTerminate}
 };

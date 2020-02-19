@@ -142,9 +142,35 @@ void loop()
         return;
     }
     // see if we got a menu match
+    bool skip = false;
+    int skipper = 0;    // increment each time we have to skip one so we get the right height
     for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
+        // see if this is one to skip
+        if (currentMenu[ix].op == eSkipFalse) {
+            Serial.println("false");
+            ++skipper;
+            if (!*(bool*)currentMenu[ix].value) {
+                skip = true;
+            }
+            continue;
+        }
+        if (currentMenu[ix].op == eSkipTrue) {
+            Serial.println("true");
+            ++skipper;
+            if (*(bool*)currentMenu[ix].value) {
+                skip = true;
+            }
+            continue;
+        }
         // look for a match
-        if (RangeTest(p.y, ix * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
+        Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
+        if (skip) {
+            Serial.println("skipping:" + String(ix));
+            skip = false;
+            continue;
+        }
+        if (RangeTest(p.y, (ix - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
+            Serial.println("match: ix=" + String(ix) + " skipper=" + String(skipper));
             //Serial.println("clicked on menu");
             // got one, service it
             switch (currentMenu[ix].op) {
@@ -754,51 +780,68 @@ void ShowMenu(struct MenuItem* menu)
     int y = 0;
     int x = 0;
     tft.setTextSize(2);
+    bool skip = false;
     // loop through the menu
     while (menu->op != eTerminate) {
-        switch (menu->op) {
-        case eClear:
-            tft.fillScreen(menu->back_color);
-            break;
-        case eTextInt:
-        case eText:
-            // increment displayable lines
-            y += LINEHEIGHT;
-            tft.setTextColor(ILI9341_WHITE, menu->back_color);
-            tft.setCursor(x, y);
-            if (menu->value) {
-                char line[100];
-                if (menu->op == eText)
-                    sprintf(line, menu->text, (char*)menu->value);
-                else
-                    sprintf(line, menu->text, *(int*)menu->value);
-                tft.print(line);
-            }
-            else {
+        if (skip) {
+            skip = false;
+        }
+        else
+        {
+            switch (menu->op) {
+            case eSkipTrue:
+                // skip the next one if true
+                if (*(bool*)menu->value)
+                    skip = true;
+                break;
+            case eSkipFalse:
+                // skip the next one if false
+                if (!*(bool*)menu->value)
+                    skip = true;
+                break;
+            case eClear:
+                tft.fillScreen(menu->back_color);
+                break;
+            case eTextInt:
+            case eText:
+                // increment displayable lines
+                y += LINEHEIGHT;
+                tft.setTextColor(ILI9341_WHITE, menu->back_color);
+                tft.setCursor(x, y);
+                if (menu->value) {
+                    char line[100];
+                    if (menu->op == eText)
+                        sprintf(line, menu->text, (char*)menu->value);
+                    else
+                        sprintf(line, menu->text, *(int*)menu->value);
+                    tft.print(line);
+                }
+                else {
+                    tft.print(menu->text);
+                }
+                break;
+            case eBool:
+                // increment displayable lines
+                y += LINEHEIGHT;
+                tft.setTextColor(ILI9341_WHITE, menu->back_color);
+                tft.setCursor(x, y);
+                if (menu->value) {
+                    char line[100];
+                    sprintf(line, menu->text, *(bool*)menu->value ? menu->on : menu->off);
+                    tft.print(line);
+                }
+                else {
+                    tft.print(menu->text);
+                }
+                break;
+            case eMenu:
+            case eExit:
+                y += LINEHEIGHT;
+                tft.setTextColor(ILI9341_WHITE, menu->back_color);
+                tft.setCursor(x, y);
                 tft.print(menu->text);
+                break;
             }
-            break;
-        case eBool:
-            // increment displayable lines
-            y += LINEHEIGHT;
-            tft.setTextColor(ILI9341_WHITE, menu->back_color);
-            tft.setCursor(x, y);
-            if (menu->value) {
-                char line[100];
-                sprintf(line, menu->text, *(bool*)menu->value?menu->on:menu->off);
-                tft.print(line);
-            }
-            else {
-                tft.print(menu->text);
-            }
-            break;
-        case eMenu:
-        case eExit:
-            y += LINEHEIGHT;
-            tft.setTextColor(ILI9341_WHITE, menu->back_color);
-            tft.setCursor(x, y);
-            tft.print(menu->text);
-            break;
         }
         ++menu;
     }
@@ -817,14 +860,14 @@ void ToggleFilesBuiltin(MenuItem* menu)
                 // add each one
                 FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
             }
-            currentMenu = MainMenuInternal;
+            //currentMenu = MainMenuInternal;
             currentFolder = "";
         }
         else {
             // read the SD
             currentFolder = "/";
             GetFileNamesFromSD(currentFolder);
-            currentMenu = MainMenu;
+            //currentMenu = MainMenu;
         }
     }
 }
@@ -1072,10 +1115,9 @@ bool GetFileNamesFromSD(String dir) {
             WriteMessage(str, true);
             break;
         }
-        Serial.println("opennext");
         if (!file.isHidden() && file.getName(buf, sizeof(buf))) {
             CurrentFilename = String(buf);
-            Serial.println("name: " + CurrentFilename + " len: " + String(CurrentFilename.length()));
+            //Serial.println("name: " + CurrentFilename + " len: " + String(CurrentFilename.length()));
             if (file.isDir()) {
                 FileNames[NumberOfFiles] = String(NEXT_FOLDER_CHAR) + buf;
                 NumberOfFiles++;
