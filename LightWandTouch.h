@@ -15,6 +15,9 @@ int g = 0;                                // Variable for the Green Value
 int b = 0;                                // Variable for the Blue Value
 int r = 0;                                // Variable for the Red Value
 
+// functions
+bool CheckCancel();
+
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 

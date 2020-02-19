@@ -84,12 +84,10 @@ void setup(void) {
     analogWrite(TFT_BRIGHT, 255);
     //delay(2000);
     digitalWrite(LED_BUILTIN, HIGH);
-    //SaveSettings(false, true);
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
 #endif
     FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-    FastLED.setBrightness(nStripBrightness * 255L / 100);
-    //FastLED.setBrightness(255L / (101 - nStripBrightness));
+    FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     // Turn the LED on, then pause
     leds[0] = leds[1] = CRGB::Red;
     leds[4] = leds[5] = CRGB::Green;
@@ -135,20 +133,10 @@ void loop()
     // see if the go button
     if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
         //Serial.println("GO...");
-        tft.fillScreen(ILI9341_BLUE);
-        tft.fillRect(0, 0, tft.width() - 1, 10, ILI9341_LIGHTGREY);
-        tft.setCursor(0, 12);
+        tft.fillScreen(ILI9341_BLACK);
+        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
+        tft.setCursor(0, 15);
         tft.print(currentFolder + FileNames[CurrentFileIndex]);
-        //for (int x = 0; x <= 100; ++x) {
-        //    int wide = map(x, 0, 100, 0, tft.width() - 1);
-        //    tft.fillRect(0, 0, wide, 10, ILI9341_DARKGREY);
-        //    if (ts.touched()) {
-        //        ReadTouch(false);
-        //        break;
-        //    }
-        //    delay(100);
-        //}
-        //delay(500);
         ProcessFileOrTest(0);
         bMenuChanged = true;
         return;
@@ -213,7 +201,7 @@ void ProcessFileOrTest(int chainnumber)
             delay(1000);
         }
     }
-    FastLED.setBrightness(255L * nStripBrightness / 100);
+    FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     for (int counter = repeatCount; counter > 0; counter--) {
         //if (chainnumber) {
         //    lcd.setCursor(13, 1);
@@ -380,20 +368,27 @@ void ReadAndDisplayFile() {
     // Change the order if needed to make the colors correct.
 
     long secondsLeft = 0, lastSeconds = 0;
-    char num[8];
+    char num[50];
+    int lastpercent = -1;
+    int lastx = 0;
     for (int y = imgHeight; y > 0; y--) {
         // approximate time left
         secondsLeft = ((long)y * frameHold / 1000L) + 1;
         if (secondsLeft != lastSeconds) {
-            //lcd.setCursor(11, 0);
-            //lastSeconds = secondsLeft;
-            //sprintf(num, "%3d S", secondsLeft);
-            //lcd.print(num);
+            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+            tft.setTextSize(2);
+            tft.setCursor(0, 38);
+            lastSeconds = secondsLeft;
+            sprintf(num, "%3d time left", secondsLeft);
+            tft.print(num);
         }
-        if ((y % 10) == 0) {
-            //lcd.setCursor(12, 1);
-            //sprintf(num, "%4d", y);
-            //lcd.print(num);
+        int percent = map(imgHeight - y, 0, imgHeight, 0, 100);
+        if (lastpercent != percent && (percent % 5) == 0) {
+            tft.fillRect(lastx, 0, (tft.width()) * percent / 100, 15, ILI9341_DARKGREY);
+            lastpercent = percent;
+            //tft.setCursor(0, 50);
+            //sprintf(num, "%4d/%5d", y, imgHeight);
+            //tft.print(num);
         }
         int bufpos = 0;
         //uint32_t offset = (MYBMP_BF_OFF_BITS + ((y - 1) * lineLength));
@@ -413,13 +408,12 @@ void ReadAndDisplayFile() {
         while (bStripWaiting)
             EventTimers.tick();
         FastLED.show();
-        delay(frameHold);
         bStripWaiting = true;
         // set a timer so we can go ahead and load the next frame
         EventTimers.in(frameHold, StripDelay);
         // check keys
-        //if (CheckCancel())
-        //    break;
+        if (CheckCancel())
+            break;
     }
     readByte(true);
 }
@@ -618,6 +612,7 @@ void ShowGo()
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
     tft.print("GO");
+    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
 }
 
 // Top left is origin, down is y, right is x
@@ -649,6 +644,58 @@ TS_Point ReadTouch()
     p.x = x;
     p.y = y;
     return p;
+}
+
+// see if they want to cancel
+bool CheckCancel()
+{
+    static long waitForIt;
+    static bool bReadyToCancel = false;
+    static bool bCancelPending = false;
+    bool retflag = false;
+    if (bCancelPending && !bReadyToCancel) {
+        bReadyToCancel = true;
+        waitForIt = millis();
+        return false;
+    }
+    if (bReadyToCancel && millis() > waitForIt + 5000) {
+        bReadyToCancel = false;
+        bCancelPending = false;
+        tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+        tft.setCursor(5, tft.height() / 2);
+        tft.setTextSize(4);
+        tft.println("       ");
+        tft.println("             ");
+    }
+    if (ts.bufferEmpty())
+        return false;
+    TS_Point point = ReadTouch();
+    Serial.println("read touch");
+    if (!bCancelPending) {
+        tft.setCursor(5, tft.height() / 2);
+        tft.setTextColor(ILI9341_RED, ILI9341_BLACK);
+        tft.setTextSize(4);
+        tft.println("Cancel?");
+        tft.print("   Yes    No");
+        bCancelPending = true;
+        bReadyToCancel = false;
+        return false;
+    }
+    if (bReadyToCancel) {
+        bCancelPending = false;
+        if (RangeTest(point.x, 105, 20) && RangeTest(point.y, 178, 20)) {
+            bCancelRun = true;
+            retflag = true;
+        }
+        else {
+            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+            tft.setCursor(5, tft.height() / 2);
+            tft.setTextSize(4);
+            tft.println("       ");
+            tft.println("             ");
+        }
+    }
+    return retflag;
 }
 
 // display the menu
@@ -721,9 +768,11 @@ void ToggleFilesBuiltin(MenuItem* menu)
                 FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
             }
             currentMenu = MainMenuInternal;
+            currentFolder = "";
         }
         else {
             // read the SD
+            currentFolder = "/";
             GetFileNamesFromSD(currentFolder);
             currentMenu = MainMenu;
         }
@@ -910,6 +959,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     }
     return status;
 }
+
 void DisplayValueLine(char* text, int val, int blanks)
 {
     tft.setCursor(5, 5);
@@ -1032,8 +1082,8 @@ void TestCylon()
 void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
     for (int i = 0; i < stripLength - EyeSize - 2; i++) {
-        //if (CheckCancel())
-        //    return;
+        if (CheckCancel())
+            return;
         FastLED.clear();
         leds[i] = CRGB(red / 10, green / 10, blue / 10);
         for (int j = 1; j <= EyeSize; j++) {
@@ -1047,8 +1097,8 @@ void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
     delay(ReturnDelay);
 
     for (int i = stripLength - EyeSize - 2; i > 0; i--) {
-        //if (CheckCancel())
-        //    return;
+        if (CheckCancel())
+            return;
         FastLED.clear();
         leds[i] = CRGB(red / 10, green / 10, blue / 10);
         for (int j = 1; j <= EyeSize; j++) {
@@ -1070,12 +1120,12 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
     FastLED.clear(true);
 
     for (int i = 0; i < stripLength + stripLength; i++) {
-        //if (CheckCancel())
-        //    return;
+        if (CheckCancel())
+            return;
         // fade brightness all LEDs one step
         for (int j = 0; j < stripLength; j++) {
-            //if (CheckCancel())
-            //    return;
+            if (CheckCancel())
+                return;
             if ((!meteorRandomDecay) || (random(10) > 5)) {
                 fadeToBlack(j, meteorTrailDecay);
             }
@@ -1083,8 +1133,8 @@ void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTra
 
         // draw meteor
         for (int j = 0; j < meteorSize; j++) {
-            //if (CheckCancel())
-            //    return;
+            if (CheckCancel())
+                return;
             if ((i - j < stripLength) && (i - j >= 0)) {
                 leds[i - j] = CRGB(red, green, blue);
             }
@@ -1103,8 +1153,8 @@ void fadeToBlack(int ledNo, byte fadeValue) {
 void RunningDot()
 {
     for (int colorvalue = 0; colorvalue <= 3; ++colorvalue) {
-        //if (CheckCancel())
-        //    return;
+        if (CheckCancel())
+            return;
         // RGBW
         byte r, g, b;
         switch (colorvalue) {
@@ -1132,8 +1182,8 @@ void RunningDot()
         //fixRGBwithGamma(&r, &g, &b);
         char line[10];
         for (int ix = 0; ix < stripLength; ++ix) {
-            //if (CheckCancel())
-            //    return;
+            if (CheckCancel())
+                return;
             //lcd.setCursor(11, 0);
             //sprintf(line, "%3d", ix);
             //lcd.print(line);
@@ -1195,11 +1245,11 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
     // run for 30 seconds
     long start = millis();
     while (millis() < start + ((long)nBouncingBallsRuntime * 1000)) {
-        //if (CheckCancel())
-        //    return;
+        if (CheckCancel())
+            return;
         for (int i = 0; i < balls; i++) {
-            //if (CheckCancel())
-            //    return;
+            if (CheckCancel())
+                return;
             TimeSinceLastBounce[i] = millis() - ClockTimeSinceLastBounce[i];
             Height[i] = 0.5 * Gravity * pow(TimeSinceLastBounce[i] / nBouncingBallsDecay, 2.0) + ImpactVelocity[i] * TimeSinceLastBounce[i] / nBouncingBallsDecay;
 
@@ -1216,8 +1266,8 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
         }
 
         for (int i = 0; i < balls; i++) {
-            //if (CheckCancel())
-                //return;
+            if (CheckCancel())
+                return;
             leds[Position[i]] = CRGB(colors[i][0], colors[i][1], colors[i][2]);
         }
         FastLED.show();
