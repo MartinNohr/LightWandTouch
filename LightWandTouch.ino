@@ -203,6 +203,12 @@ void ProcessFileOrTest(int chainnumber)
     }
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     for (int counter = repeatCount; counter > 0; counter--) {
+        if (repeatCount) {
+            tft.setCursor(0, 100);
+            tft.setTextSize(2);
+            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+            tft.print("Repeats Left: " + String(counter) + "   ");
+        }
         //if (chainnumber) {
         //    lcd.setCursor(13, 1);
         //    char line[10];
@@ -211,7 +217,6 @@ void ProcessFileOrTest(int chainnumber)
         //}
         //lcd.setCursor(0, 0);
         // only display if a file
-        char first = FileNames[CurrentFileIndex][0];
         if (bShowBuiltInTests) {
             // run the test
             (*BuiltInFiles[CurrentFileIndex].function)();
@@ -318,9 +323,7 @@ void ReadAndDisplayFile() {
 
     /* Check file header */
     if (bmpType != MYBMP_BF_TYPE || bmpOffBits != MYBMP_BF_OFF_BITS) {
-        //lcd.setCursor(0, 0);
-        //lcd.print("not a bitmap");
-        //delay(1000);
+        WriteMessage("Invalid BMP:\n" + currentFolder + FileNames[CurrentFileIndex], true);
         return;
     }
 
@@ -343,11 +346,7 @@ void ReadAndDisplayFile() {
         imgBitCount != 24 || imgCompression != MYBMP_BI_RGB ||
         imgSizeImage == 0)
     {
-        //lcd.setCursor(0, 0);
-        //lcd.print("Unsupported");
-        //lcd.setCursor(0, 1);
-        //lcd.print("Bitmap Use 24bpp");
-        //delay(1000);
+        WriteMessage("Unsupported, must be 24bpp:\n" + currentFolder + FileNames[CurrentFileIndex], true);
         return;
     }
 
@@ -379,7 +378,7 @@ void ReadAndDisplayFile() {
             tft.setTextSize(2);
             tft.setCursor(0, 38);
             lastSeconds = secondsLeft;
-            sprintf(num, "%3d time left", secondsLeft);
+            sprintf(num, "%3d seconds", secondsLeft);
             tft.print(num);
         }
         int percent = map(imgHeight - y, 0, imgHeight, 0, 100);
@@ -521,6 +520,27 @@ String MakeLWCFilename(String filename)
     return cfFile;
 }
 
+void EraseStartFile(MenuItem* menu)
+{
+    WriteOrDeleteConfigFile("", true, true);
+}
+
+void SaveStartFile(MenuItem* menu)
+{
+    WriteOrDeleteConfigFile("", false, true);
+}
+
+void LoadStartFile(MenuItem* menu)
+{
+    String name = currentFolder + "START.LWC";
+    if (ProcessConfigFile(name.c_str())) {
+        WriteMessage("Processed:\n" + name);
+    }
+    else {
+        WriteMessage("Failed reading:\n" + name, true);
+    }
+}
+
 // process the lines in the config file
 bool ProcessConfigFile(String filename)
 {
@@ -564,6 +584,7 @@ bool ProcessConfigFile(String filename)
                 }
             }
         }
+        rdfile.close();
     }
     else
         retval = false;
@@ -571,18 +592,29 @@ bool ProcessConfigFile(String filename)
 }
 
 // create the config file, or remove it
-bool WriteOrDeleteConfigFile(String filename, bool remove)
+// startfile true makes it use the start.lwc file, else it handles the associated name file
+bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
 {
     bool retval = true;
-    String name = MakeLWCFilename(filename);
-    String filepath = currentFolder + name;
-    if (remove) {
-        SD.remove(filepath.c_str());
+    String filepath;
+    if (startfile) {
+        filepath = currentFolder + "START.LWC";
     }
     else {
-        SdFile file(filepath.c_str(), O_READ | O_WRITE | O_CREAT | O_TRUNC);
+        filepath = currentFolder + MakeLWCFilename(filename);
+    }
+    if (remove) {
+        if (SD.remove(filepath.c_str())) {
+            WriteMessage("Erased:\n" + filepath);
+        }
+        else {
+            WriteMessage("Failed to erase:\n" + filepath, true);
+        }
+    }
+    else {
+        SdFile file;
         String line;
-        if (file.availableForWrite()) {
+        if (file.open(filepath.c_str(), O_WRITE | O_CREAT | O_TRUNC)) {
             line = "PIXELS=" + String(stripLength);
             file.println(line);
             line = "BRIGHTNESS=" + String(nStripBrightness);
@@ -596,11 +628,26 @@ bool WriteOrDeleteConfigFile(String filename, bool remove)
             line = "START DELAY=" + String(startDelay);
             file.println(line);
             file.close();
+            WriteMessage("Saved:\n" + filepath);
         }
-        else
+        else {
             retval = false;
+            WriteMessage("Failed to write:\n" + filepath, true);
+        }
     }
     return retval;
+}
+
+// display message on first line
+void WriteMessage(String txt, bool error = false, int wait = 2000)
+{
+    tft.setCursor(0, 0);
+    tft.setTextSize(2);
+    tft.fillRect(0, 0, tft.width() - 1, 32, error ? ILI9341_RED : ILI9341_GREEN);
+    tft.setTextColor(error ? ILI9341_WHITE : ILI9341_BLACK, error ? ILI9341_RED : ILI9341_GREEN);
+    tft.print(txt);
+    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+    delay(wait);
 }
 
 void ShowGo()
@@ -670,7 +717,6 @@ bool CheckCancel()
     if (ts.bufferEmpty())
         return false;
     TS_Point point = ReadTouch();
-    Serial.println("read touch");
     if (!bCancelPending) {
         tft.setCursor(5, tft.height() / 2);
         tft.setTextColor(ILI9341_RED, ILI9341_BLACK);
@@ -1026,7 +1072,7 @@ bool GetFileNamesFromSD(String dir) {
         if (!file.isHidden()) {
             char buf[100];
             file.getName(buf, sizeof(buf));
-            //Serial.println("name: " + String(buf));
+            Serial.println("name: " + String(buf));
             if (file.isDir()) {
                 FileNames[NumberOfFiles] = String(NEXT_FOLDER_CHAR) + buf;
                 NumberOfFiles++;
@@ -1279,4 +1325,93 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
     free(Position);
     free(ClockTimeSinceLastBounce);
     free(Dampening);
+}
+
+void OppositeRunningDots()
+{
+    for (int mode = 0; mode <= 3; ++mode) {
+        if (CheckCancel())
+            return;
+        // RGBW
+        byte r, g, b;
+        switch (mode) {
+        case 0: // red
+            r = 255;
+            g = 0;
+            b = 0;
+            break;
+        case 1: // green
+            r = 0;
+            g = 255;
+            b = 0;
+            break;
+        case 2: // blue
+            r = 0;
+            g = 0;
+            b = 255;
+            break;
+        case 3: // white
+            r = 255;
+            g = 255;
+            b = 255;
+            break;
+        }
+        fixRGBwithGamma(&r, &g, &b);
+        for (int ix = 0; ix < stripLength; ++ix) {
+            if (CheckCancel())
+                return;
+            if (ix > 0) {
+                leds[ix - 1] = ILI9341_BLACK;
+                leds[stripLength - ix + 1] = ILI9341_BLACK;
+            }
+            leds[stripLength - ix] = CRGB(r, g, b);
+            leds[ix] = CRGB(r, g, b);
+            FastLED.show();
+            delay(frameHold);
+        }
+        // remember the last one, turn it off
+        leds[stripLength - 1] = ILI9341_BLACK;
+        FastLED.show();
+    }
+}
+
+#define BARBERSIZE 10
+#define BARBERCOUNT 40
+void BarberPole()
+{
+    CRGB:CRGB color, red, white, blue;
+    byte r, g, b;
+    r = 255, g = 0, b = 0;
+    fixRGBwithGamma(&r, &g, &b);
+    red = CRGB(r, g, b);
+    r = 255, g = 255, b = 255;
+    fixRGBwithGamma(&r, &g, &b);
+    white = CRGB(r, g, b);
+    r = 0, g = 0, b = 255;
+    fixRGBwithGamma(&r, &g, &b);
+    blue = CRGB(r, g, b);
+    for (int loop = 0; loop < 4 * BARBERCOUNT; ++loop) {
+        if (CheckCancel())
+            return;
+        for (int ledIx = 0; ledIx < stripLength; ++ledIx) {
+            if (CheckCancel())
+                return;
+            // figure out what color
+            switch (((ledIx + loop) % BARBERCOUNT) / BARBERSIZE) {
+            case 0: // red
+                color = red;
+                break;
+            case 1: // white
+            case 3:
+                color = white;
+                break;
+            case 2: // blue
+                color = blue;
+                break;
+            }
+            leds[ledIx] = color;
+        }
+        FastLED.show();
+        delay(frameHold);
+    }
 }

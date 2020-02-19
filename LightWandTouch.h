@@ -61,15 +61,15 @@ bool bScaleHeight = false;                // scale the Y values to fit the numbe
 bool bCancelRun = false;                  // set to cancel a running job
 bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
 SdFile dataFile;
-int CurrentFileIndex = 0;
-int NumberOfFiles = 0;
-String FileNames[200];
-bool bShowBuiltInTests = false;
 int nMaxBackLight = 75;                 // maximum backlight to use in %
 int nMinBackLight = 25;                 // dimmest setting
 int nBackLightSeconds = 10;             // how long to leave the backlight on before dimming
 volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
 volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
+int CurrentFileIndex = 0;
+int NumberOfFiles = 0;
+String FileNames[200];
+bool bShowBuiltInTests = false;
 
 struct saveValues {
     void* val;
@@ -121,11 +121,18 @@ void GetIntegerValue(MenuItem*);
 void ToggleBool(MenuItem*);
 void EnterFileName(MenuItem*);
 void ToggleFilesBuiltin(MenuItem*);
+void EraseStartFile(MenuItem*);
+void SaveStartFile(MenuItem*);
+void LoadStartFile(MenuItem*);
+void WriteMessage(String, bool error = false, int wait = 2000);
 
 void RunningDot();
 void TestCylon();
 void TestMeteor();
 void TestBouncingBalls();
+void BarberPole();
+void OppositeRunningDots();
+
 // adjustment values
 int nBouncingBallsCount = 4;
 int nBouncingBallsDecay = 1000;
@@ -167,12 +174,23 @@ MenuItem DisplayMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem StartFileMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,"START.LWC Operations"},
+    {eText,   ILI9341_BLACK,"Erase",EraseStartFile},
+    {eText,   ILI9341_BLACK,"Save",SaveStartFile},
+    {eText,   ILI9341_BLACK,"Load",LoadStartFile},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem MainMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
     {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     // make sure this one is last
     {eTerminate}
@@ -183,7 +201,7 @@ MenuItem MainMenuInternal[] = {
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
+    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
     // make sure this one is last
     {eTerminate}
@@ -203,9 +221,11 @@ struct BuiltInItem {
 typedef BuiltInItem BuiltInItem;
 BuiltInItem BuiltInFiles[] = {
     {"Running Dot",RunningDot},
+    {"2 Running Dots",OppositeRunningDots},
+    {"Barber Pole",BarberPole},
+    {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
     {"Cylon",TestCylon},
     {"Meteor",TestMeteor},
-    {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
 };
 
 // timers to run things
