@@ -1024,22 +1024,12 @@ void setupSDcard() {
     pinMode(SDcsPin, OUTPUT);
 
     while (!SD.begin(SDcsPin)) {
-        Serial.println("failed to init sd");
-//        bBackLightOn = true;
-//        lcd.print("SD init failed! ");
-        delay(1000);
-//        lcd.clear();
-        delay(500);
+        //Serial.println("failed to init sd");
+        bBackLightOn = true;
+        WriteMessage("SD Init failed", true, 5000);
     }
-//    lcd.clear();
-//    lcd.print("SD init done    ");
-    //delay(1000);
-//    folders[folderLevel = 0] = String("/");
-//    lcd.clear();
-//    lcd.print("Reading SD...   ");
-    //delay(500);
+    WriteMessage("Reading SD...");
     GetFileNamesFromSD(currentFolder);
-    //DisplayCurrentFilename();
 }
 
 // read the files from the card
