@@ -76,6 +76,7 @@ void setup(void) {
     tft.println("       Version 0.9");
     tft.println("       Martin Nohr");
     delay(1000);
+    setupSDcard();
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
     //analogWrite(TFT_BRIGHT, 10);
@@ -102,7 +103,6 @@ void setup(void) {
     }
     // Now turn the LED off
     FastLED.clear(true);
-    setupSDcard();
 }
 
 bool bMenuChanged = true;
@@ -1032,7 +1032,6 @@ void setupSDcard() {
     }
     delay(100);
     WriteMessage("Reading SD...");
-    delay(100);
     GetFileNamesFromSD(currentFolder);
 }
 

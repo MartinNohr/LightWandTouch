@@ -190,7 +190,7 @@ MenuItem MainMenu[] = {
     {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
+    //{eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
     {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     // make sure this one is last
     {eTerminate}
