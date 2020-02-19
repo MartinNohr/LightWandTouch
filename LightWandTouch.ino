@@ -60,10 +60,11 @@ void setup(void) {
     Serial.println(F("Light Wand Touch"));
 
     if (!ts.begin()) {
+        WriteMessage("Failed starting touch screen", true);
         Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
-    Serial.println("Touchscreen started");
+    //Serial.println("Touchscreen started");
     tft.fillScreen(ILI9341_BLACK);
     tft.setRotation(1);
 #if !CALIBRATE
@@ -75,8 +76,8 @@ void setup(void) {
     tft.println("\n");
     tft.println("       Version 0.9");
     tft.println("       Martin Nohr");
-    delay(1000);
     setupSDcard();
+    WriteMessage("Testing LED Strip", false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
     //analogWrite(TFT_BRIGHT, 10);
@@ -131,10 +132,9 @@ void loop()
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
     // see if the go button
-    if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 16, 20)) {
+    if (RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25)) {
         //Serial.println("GO...");
         tft.fillScreen(ILI9341_BLACK);
-        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
         tft.setCursor(0, 15);
         tft.print(currentFolder + FileNames[CurrentFileIndex]);
         ProcessFileOrTest(0);
@@ -144,15 +144,15 @@ void loop()
     // see if we got a menu match
     for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
         // look for a match
-        if (RangeTest(p.y, ix * LINEHEIGHT, LINEHEIGHT / 2)) {
-            Serial.println("clicked on menu");
+        if (RangeTest(p.y, ix * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
+            //Serial.println("clicked on menu");
             // got one, service it
             switch (currentMenu[ix].op) {
             case eText:
             case eTextInt:
             case eBool:
                 if (currentMenu[ix].function) {
-                    Serial.println(ix);
+                    //Serial.println(ix);
                     (*currentMenu[ix].function)(&currentMenu[ix]);
                     bMenuChanged = true;
                 }
@@ -203,7 +203,9 @@ void ProcessFileOrTest(int chainnumber)
     }
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     for (int counter = repeatCount; counter > 0; counter--) {
-        if (repeatCount) {
+        // fill the progress bar
+        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
+        if (repeatCount > 1) {
             tft.setCursor(0, 100);
             tft.setTextSize(2);
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -382,7 +384,7 @@ void ReadAndDisplayFile() {
             tft.print(num);
         }
         int percent = map(imgHeight - y, 0, imgHeight, 0, 100);
-        if (lastpercent != percent && (percent % 5) == 0) {
+        if (lastpercent != percent && ((percent % 5) == 0) || percent > 90) {
             tft.fillRect(lastx, 0, (tft.width()) * percent / 100, 15, ILI9341_DARKGREY);
             lastpercent = percent;
             //tft.setCursor(0, 50);
@@ -1024,14 +1026,12 @@ void DisplayValueLine(char* text, int val, int blanks)
 
 void setupSDcard() {
     pinMode(SDcsPin, OUTPUT);
-    delay(100);
     while (!SD.begin(SDcsPin)) {
         //Serial.println("failed to init sd");
         bBackLightOn = true;
         WriteMessage("SD Init failed", true, 5000);
     }
-    delay(100);
-    WriteMessage("Reading SD...");
+    WriteMessage("Reading SD...", false, 100);
     GetFileNamesFromSD(currentFolder);
 }
 
@@ -1045,6 +1045,10 @@ bool GetFileNamesFromSD(String dir) {
     // Use for files
     SdFile file;
     // start over
+    // first empty the current file names
+    for (int ix = 0; ix < NumberOfFiles; ++ix) {
+        FileNames[ix] = "";
+    }
     NumberOfFiles = 0;
     CurrentFileIndex = 0;
     String CurrentFilename = "";
@@ -1063,6 +1067,11 @@ bool GetFileNamesFromSD(String dir) {
     }
     static char buf[20];
     while (file.openNext(&root, O_RDONLY)) {
+        if (NumberOfFiles >= MAX_FILES) {
+            String str = "Max " + String(MAX_FILES) + String(" files allowed");
+            WriteMessage(str, true);
+            break;
+        }
         Serial.println("opennext");
         if (!file.isHidden() && file.getName(buf, sizeof(buf))) {
             CurrentFilename = String(buf);

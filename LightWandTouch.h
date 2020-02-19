@@ -68,7 +68,8 @@ volatile bool bBackLightOn = false;     // used by backlight timer to indicate t
 volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
 int CurrentFileIndex = 0;
 int NumberOfFiles = 0;
-String FileNames[200];
+#define MAX_FILES 25
+String FileNames[MAX_FILES];
 bool bShowBuiltInTests = false;
 
 struct saveValues {
@@ -96,7 +97,7 @@ const saveValues saveValueList[] = {
 
 // The menu structures
 enum eDisplayOperation {
-    eTerminate, // must be last
+    eTerminate, // must be last in a menu
     eClear,     // set screen background
     eText,      // handle text with optional %s value
     eTextInt,   // handle text with optional %d value
@@ -184,17 +185,6 @@ MenuItem StartFileMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem MainMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
-    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    //{eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
-    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
-    // make sure this one is last
-    {eTerminate}
-};
 MenuItem MainMenuInternal[] = {
     {eClear,  ILI9341_BLACK},
     {eText,   ILI9341_BLACK,"Choose Internal File",EnterFileName},
@@ -203,6 +193,17 @@ MenuItem MainMenuInternal[] = {
     {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
+    // make sure this one is last
+    {eTerminate}
+};
+MenuItem MainMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,"Choose SD File",EnterFileName},
+    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
+    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eMenu,   ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
+    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
     // make sure this one is last
     {eTerminate}
 };
