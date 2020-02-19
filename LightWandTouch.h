@@ -181,6 +181,7 @@ MenuItem StartFileMenu[] = {
     {eText,   ILI9341_BLACK,"Erase",EraseStartFile},
     {eText,   ILI9341_BLACK,"Save",SaveStartFile},
     {eText,   ILI9341_BLACK,"Load",LoadStartFile},
+    {eBool,   ILI9341_BLACK,"Autoload: %s",ToggleBool,&bAutoLoadStart,0,0,"On","Off"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
