@@ -67,7 +67,6 @@ void setup(void) {
     tft.fillScreen(ILI9341_BLACK);
     tft.setRotation(1);
 #if !CALIBRATE
-    setupSDcard();
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
     tft.println("\n\n");
@@ -103,6 +102,7 @@ void setup(void) {
     }
     // Now turn the LED off
     FastLED.clear(true);
+    setupSDcard();
 }
 
 bool bMenuChanged = true;
@@ -471,7 +471,9 @@ int readByte(bool clear) {
         //}
         // read a block
 //        Serial.println("block read");
-        filebufsize = dataFile.read(filebuf, sizeof(filebuf));
+        do {
+            filebufsize = dataFile.read(filebuf, sizeof(filebuf));
+        } while (filebufsize < 0);
         fileindex = 0;
     }
     return filebuf[fileindex++];
@@ -1022,13 +1024,15 @@ void DisplayValueLine(char* text, int val, int blanks)
 
 void setupSDcard() {
     pinMode(SDcsPin, OUTPUT);
-
+    delay(100);
     while (!SD.begin(SDcsPin)) {
         //Serial.println("failed to init sd");
         bBackLightOn = true;
         WriteMessage("SD Init failed", true, 5000);
     }
+    delay(100);
     WriteMessage("Reading SD...");
+    delay(100);
     GetFileNamesFromSD(currentFolder);
 }
 
@@ -1058,17 +1062,17 @@ bool GetFileNamesFromSD(String dir) {
             sdir = "/";
         FileNames[NumberOfFiles++] = String(PREVIOUS_FOLDER_CHAR) + sdir;
     }
+    static char buf[20];
     while (file.openNext(&root, O_RDONLY)) {
-        if (!file.isHidden()) {
-            char buf[100];
-            file.getName(buf, sizeof(buf));
-            Serial.println("name: " + String(buf));
+        Serial.println("opennext");
+        if (!file.isHidden() && file.getName(buf, sizeof(buf))) {
+            CurrentFilename = String(buf);
+            Serial.println("name: " + CurrentFilename + " len: " + String(CurrentFilename.length()));
             if (file.isDir()) {
                 FileNames[NumberOfFiles] = String(NEXT_FOLDER_CHAR) + buf;
                 NumberOfFiles++;
             }
             else if (file.isFile()) {
-                CurrentFilename = String(buf);
                 String uppername = CurrentFilename;
                 uppername.toUpperCase();
                 if (uppername.endsWith(".BMP")) { //find files with our extension only
