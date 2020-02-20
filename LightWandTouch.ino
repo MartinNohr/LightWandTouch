@@ -284,6 +284,7 @@ void ProcessFileOrTest(int chainnumber)
                 nTimerSeconds = repeatDelay;
                 EventTimers.every(1000L, SecondsTimer);
                 while (nTimerSeconds) {
+                    bTurnOnBacklight = true;
                     tft.setCursor(0, 75);
                     tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
                     tft.print("   ");
