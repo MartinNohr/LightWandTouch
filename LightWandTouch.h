@@ -188,7 +188,7 @@ MenuItem OtherSettingsMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eTextInt,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
     {eTextInt,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
-    {eTextInt,ILI9341_BLACK,"Backlight Timeout: %d",GetIntegerValue,&nBackLightSeconds,1,1000},
+    {eTextInt,ILI9341_BLACK,"Backlight Timeout: %d (S)",GetIntegerValue,&nBackLightSeconds,1,1000},
     {eMenu,   ILI9341_BLACK,"Default Settings",NULL,EepromMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
