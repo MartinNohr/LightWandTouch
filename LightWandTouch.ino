@@ -256,9 +256,13 @@ void ProcessFileOrTest(int chainnumber)
             bTurnOnBacklight = true;
             Serial.println("timer "+String(nTimerSeconds));
             tft.setCursor(0, 75);
+            tft.setTextSize(2);
+            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
             tft.print("Seconds before start: " + String(nTimerSeconds));
             tft.print("   ");
             EventTimers.tick();
+            if (CheckCancel())
+                break;
             delay(10);
         }
         tft.setCursor(0, 75);
@@ -304,10 +308,14 @@ void ProcessFileOrTest(int chainnumber)
                 while (nTimerSeconds) {
                     bTurnOnBacklight = true;
                     tft.setCursor(0, 75);
+                    tft.setTextSize(2);
+                    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
                     tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
                     tft.print("   ");
                     delay(1000);
                     EventTimers.tick();
+                    if (CheckCancel())
+                        break;
                     delay(10);
                 }
                 tft.setCursor(0, 75);
