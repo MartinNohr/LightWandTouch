@@ -7,6 +7,7 @@
 #include <sdfat.h>
 #include <FastLED.h>
 #include <timer.h>
+#include <avr/eeprom.h>
 
 #define DATA_PIN 31
 #define NUM_LEDS 144
@@ -56,7 +57,8 @@ int repeatDelay = 0;                      // Variable for delay between repeats
 int repeatCount = 1;                      // Variable to keep track of number of repeats
 int nStripBrightness = 10;                // Variable and default for the Brightness of the strip
 bool bGammaCorrection = true;             // set to use the gamma table
-bool bAutoLoadStart = true;               // set to automatically load the start.lwc file
+bool bAutoLoadSettings = false;           // set to automatically load saved settings from eeprom
+//bool bAutoLoadStart = true;               // set to automatically load the start.lwc file
 bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
 bool bCancelRun = false;                  // set to cancel a running job
 bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
@@ -78,7 +80,7 @@ struct saveValues {
 };
 const saveValues saveValueList[] = {
     {&signature, sizeof(signature)},
-    {&bAutoLoadStart, sizeof(bAutoLoadStart)},
+    {&bAutoLoadSettings, sizeof(bAutoLoadSettings)},
     {&nStripBrightness, sizeof(nStripBrightness)},
     {&frameHold, sizeof(frameHold)},
     {&startDelay, sizeof(startDelay)},
@@ -128,6 +130,8 @@ void EraseStartFile(MenuItem*);
 void SaveStartFile(MenuItem*);
 void LoadStartFile(MenuItem*);
 void WriteMessage(String, bool error = false, int wait = 2000);
+void SaveEepromSettings(MenuItem*);
+void LoadEepromSettings(MenuItem*);
 
 void RunningDot();
 void TestCylon();
@@ -169,10 +173,13 @@ MenuItem BouncingBallsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem DisplayMenu[] = {
+MenuItem OtherSettingsMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eTextInt,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
     {eTextInt,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
+    {eBool,   ILI9341_BLACK,"Autoload EEPROM: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
+    {eText,   ILI9341_BLACK,"Save EEPROM Settings",SaveEepromSettings},
+    {eText,   ILI9341_BLACK,"Load EEPROM Settings",LoadEepromSettings},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -182,7 +189,6 @@ MenuItem StartFileMenu[] = {
     {eText,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
     {eText,   ILI9341_BLACK,"Save START.LWC",SaveStartFile},
     {eText,   ILI9341_BLACK,"Load START.LWC",LoadStartFile},
-    {eBool,   ILI9341_BLACK,"Autoload START.LWC: %s",ToggleBool,&bAutoLoadStart,0,0,"On","Off"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -197,7 +203,7 @@ MenuItem MainMenu[] = {
     {eMenu,     ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
     {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
     {eMenu,     ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
-    {eMenu,     ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
+    {eMenu,     ILI9341_BLACK,"Other Settings",NULL,OtherSettingsMenu},
     // make sure this one is last
     {eTerminate}
 };

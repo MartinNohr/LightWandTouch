@@ -68,15 +68,15 @@ void setup(void) {
     delay(50);
     Serial.begin(115200);
     Serial.println(F("Light Wand Touch"));
-
+    //Serial.println("Touchscreen started");
+    tft.fillScreen(ILI9341_BLACK);
+    tft.setRotation(1);
     if (!ts.begin()) {
         WriteMessage("Failed starting touch screen", true);
         Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
-    //Serial.println("Touchscreen started");
-    tft.fillScreen(ILI9341_BLACK);
-    tft.setRotation(1);
+    SaveSettings(false, true);
 #if !CALIBRATE
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
@@ -1214,7 +1214,7 @@ bool GetFileNamesFromSD(String dir) {
     delay(500);
     isort(FileNames, NumberOfFiles);
     // see if we need to process the auto start file
-    if (bAutoLoadStart && startfile.length())
+    if (startfile.length())
         ProcessConfigFile(startfile);
     return true;
 }
@@ -1536,4 +1536,57 @@ void BarberPole()
         delay(frameHold);
     }
     //ShowProgressBar(100);
+}
+
+// save some settings in the eeprom
+// if autoload is true, check the first flag, and load the rest if it is true
+void SaveSettings(bool save, bool autoload)
+{
+    void* blockpointer = (void*)NULL;
+    for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
+        if (save) {
+            eeprom_write_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+        }
+        else {  // load
+            // check signature
+            char svalue[sizeof signature];
+            eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
+            if (strncmp(svalue, signature, sizeof signature)) {
+                WriteMessage("bad eeprom signature", true);
+                return;
+            }
+            eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+            // if autoload, exit if the save value is not true
+            if (autoload && ix == 0) {
+                if (!bAutoLoadSettings) {
+                    return;
+                }
+            }
+        }
+        blockpointer = (void*)((byte*)blockpointer + saveValueList[ix].size);
+    }
+    if (!save) {
+        int savedFileIndex = CurrentFileIndex;
+        // we don't know the folder path, so just reset the folder level
+        currentFolder = "/";
+        setupSDcard();
+        CurrentFileIndex = savedFileIndex;
+        // make sure file index isn't too big
+        if (CurrentFileIndex >= NumberOfFiles) {
+            CurrentFileIndex = 0;
+        }
+    }
+    WriteMessage(save ? "Settings Saved" : "Settings Loaded");
+}
+
+// save the eeprom settings
+void SaveEepromSettings(MenuItem* menu)
+{
+    SaveSettings(true, false);
+}
+
+// load eeprom settings
+void LoadEepromSettings(MenuItem* menu)
+{
+    SaveSettings(false, true);
 }
