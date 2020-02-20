@@ -264,6 +264,7 @@ void ProcessFileOrTest(int chainnumber)
         }
         if (counter > 1) {
             if (repeatDelay) {
+                FastLED.clear(true);
                 for (int seconds = repeatDelay; seconds; --seconds) {
                     tft.setCursor(0, 75);
                     tft.print("Repeat Seconds Left: " + String(seconds));
