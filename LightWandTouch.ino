@@ -250,7 +250,7 @@ void ProcessFileOrTest(int chainnumber)
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     for (int counter = repeatCount; counter > 0; counter--) {
         // fill the progress bar
-        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
+        ShowProgressBar(0);
         if (repeatCount > 1) {
             tft.setCursor(0, 100);
             tft.setTextSize(2);
@@ -277,6 +277,7 @@ void ProcessFileOrTest(int chainnumber)
             bCancelRun = false;
             break;
         }
+        ShowProgressBar(0);
         if (counter > 1) {
             if (repeatDelay) {
                 FastLED.clear(true);
@@ -298,6 +299,20 @@ void ProcessFileOrTest(int chainnumber)
         }
     }
     FastLED.clear(true);
+}
+
+// show progress bar
+void ShowProgressBar(int percent)
+{
+    if (percent == 0) {
+        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
+    }
+    else if (percent == 100) {
+        tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_DARKGREY);
+    }
+    else {
+        tft.fillRect(0, 0, (tft.width()) * percent / 100, 15, ILI9341_DARKGREY);
+    }
 }
 
 // save or restore all the settings that are relevant
@@ -426,7 +441,6 @@ void ReadAndDisplayFile() {
     long secondsLeft = 0, lastSeconds = 0;
     char num[50];
     int lastpercent = -1;
-    int lastx = 0;
     for (int y = imgHeight; y > 0; y--) {
         // approximate time left
         secondsLeft = ((long)y * frameHold / 1000L) + 1;
@@ -440,7 +454,7 @@ void ReadAndDisplayFile() {
         }
         int percent = map(imgHeight - y, 0, imgHeight, 0, 100);
         if (lastpercent != percent && ((percent % 5) == 0) || percent > 90) {
-            tft.fillRect(lastx, 0, (tft.width()) * percent / 100, 15, ILI9341_DARKGREY);
+            ShowProgressBar(percent);
             lastpercent = percent;
             //tft.setCursor(0, 50);
             //sprintf(num, "%4d/%5d", y, imgHeight);
@@ -471,6 +485,8 @@ void ReadAndDisplayFile() {
         if (CheckCancel())
             break;
     }
+    // all done
+    ShowProgressBar(100);
     readByte(true);
 }
 
