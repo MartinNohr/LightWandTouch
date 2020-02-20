@@ -177,9 +177,9 @@ MenuItem BouncingBallsMenu[] = {
 };
 MenuItem EepromMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eBool,   ILI9341_BLACK,"Autoload EEPROM: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Save EEPROM Settings",SaveEepromSettings},
-    {eText,   ILI9341_BLACK,"Load EEPROM Settings",LoadEepromSettings},
+    {eBool,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
+    {eText,   ILI9341_BLACK,"Save Default Settings",SaveEepromSettings},
+    {eText,   ILI9341_BLACK,"Load Default Settings",LoadEepromSettings},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -189,7 +189,7 @@ MenuItem OtherSettingsMenu[] = {
     {eTextInt,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
     {eTextInt,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
     {eTextInt,ILI9341_BLACK,"Backlight Timeout: %d",GetIntegerValue,&nBackLightSeconds,1,1000},
-    {eMenu,   ILI9341_BLACK,"EEPROM Operations",NULL,EepromMenu},
+    {eMenu,   ILI9341_BLACK,"Default Settings",NULL,EepromMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
