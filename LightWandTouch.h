@@ -202,7 +202,6 @@ MenuItem MainMenu[] = {
     {eTerminate}
 };
 
-MenuItem* currentMenu = MainMenu;
 // a stack for menus so we can find our way back
 MenuItem* menustack[10];
 int menuLevel = 0;

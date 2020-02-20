@@ -104,6 +104,7 @@ void setup(void) {
     }
     // Now turn the LED off
     FastLED.clear(true);
+    menustack[menuLevel = 0] = MainMenu;
 }
 
 bool bMenuChanged = true;
@@ -121,7 +122,7 @@ void loop()
     //  return;
     //}
     if (bMenuChanged) {
-        ShowMenu(currentMenu);
+        ShowMenu(menustack[menuLevel]);
         ShowGo();
         bMenuChanged = false;
     }
@@ -146,17 +147,17 @@ void loop()
     bool skipmatch = false;
     bool gotmatch = false;
     int skipper = 0;    // increment each time we have to skip one so we get the right height
-    for (int ix = 0; !gotmatch && currentMenu[ix].op != eTerminate; ++ix) {
+    for (int ix = 0; !gotmatch && menustack[menuLevel][ix].op != eTerminate; ++ix) {
         // see if this is one to skip
-        if (currentMenu[ix].op == eSkipFalse) {
-            skipmatch = !*(bool*)currentMenu[ix].value;
+        if (menustack[menuLevel][ix].op == eSkipFalse) {
+            skipmatch = !*(bool*)menustack[menuLevel][ix].value;
             skip = true;
         }
-        else if (currentMenu[ix].op == eSkipTrue) {
-            skipmatch = *(bool*)currentMenu[ix].value;
+        else if (menustack[menuLevel][ix].op == eSkipTrue) {
+            skipmatch = *(bool*)menustack[menuLevel][ix].value;
             skip = true;
         }
-        else if (currentMenu[ix].op == eClear) {
+        else if (menustack[menuLevel][ix].op == eClear) {
             skip = true;
         }
         // look for a match
@@ -170,29 +171,29 @@ void loop()
             ++skipper;
             continue;
         }
-        Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
+        //Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
         if (RangeTest(p.y, (ix + 1 - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
             gotmatch = true;
             //Serial.println("clicked on menu");
             // got one, service it
-            switch (currentMenu[ix].op) {
+            switch (menustack[menuLevel][ix].op) {
             case eText:
             case eTextInt:
             case eBool:
-                if (currentMenu[ix].function) {
+                if (menustack[menuLevel][ix].function) {
                     //Serial.println(ix);
-                    (*currentMenu[ix].function)(&currentMenu[ix]);
+                    (*menustack[menuLevel][ix].function)(&menustack[menuLevel][ix]);
                     bMenuChanged = true;
                 }
                 break;
             case eMenu:
-                menustack[menuLevel++] = currentMenu;
-                currentMenu = (MenuItem*)(menustack[menuLevel - 1][ix].value);
+                ++menuLevel;
+                menustack[menuLevel] = (MenuItem*)(menustack[menuLevel - 1][ix].value);
                 bMenuChanged = true;
                 break;
             case eExit: // go back a level
                 if (menuLevel) {
-                    currentMenu = menustack[--menuLevel];
+                    --menuLevel;
                     bMenuChanged = true;
                 }
             }
@@ -202,7 +203,7 @@ void loop()
     // if no match, and we are in a submenu, go back one level
     if (!bMenuChanged && menuLevel) {
         bMenuChanged = true;
-        currentMenu = menustack[--menuLevel];
+        --menuLevel;
     }
     
 #else
