@@ -321,6 +321,10 @@ void ProcessFileOrTest()
                 }
             }
         }
+        if (bCancelRun) {
+            bCancelRun = false;
+            break;
+        }
         if (bShowBuiltInTests)
             break;
         // see if we are chaining, if so, get the next file, if a folder we're done
