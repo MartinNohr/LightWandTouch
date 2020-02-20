@@ -224,11 +224,13 @@ void ProcessFileOrTest(int chainnumber)
     char line[17];
     if (startDelay) {
         for (int seconds = startDelay; seconds; --seconds) {
-            //lcd.setCursor(0, 0);
-            //sprintf(line, "Wait: %d", seconds);
-            //lcd.print(line);
+            tft.setCursor(0, 75);
+            tft.print("Seconds before start: " + String(seconds));
+            tft.print("   ");
             delay(1000);
         }
+        tft.setCursor(0, 75);
+        tft.print("                         ");
     }
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     for (int counter = repeatCount; counter > 0; counter--) {
@@ -261,14 +263,18 @@ void ProcessFileOrTest(int chainnumber)
             break;
         }
         if (counter > 1) {
-            //lcd.clear();
-            //lcd.setCursor(0, 0);
-            //lcd.print("Repeat delay...");
-            //if (repeatDelay) {
-            //    FastLED.clear();
-            //    FastLED.show();
-            //    delay(repeatDelay);
-            //}
+            if (repeatDelay) {
+                for (int seconds = repeatDelay; seconds; --seconds) {
+                    tft.setCursor(0, 75);
+                    tft.print("Repeat Seconds Left: " + String(seconds));
+                    tft.print("   ");
+                    delay(1000);
+                    FastLED.clear(true);
+                    delay(repeatDelay);
+                }
+                tft.setCursor(0, 75);
+                tft.print("                           ");
+            }
         }
     }
     FastLED.clear(true);
