@@ -189,7 +189,7 @@ MenuItem StartFileMenu[] = {
 };
 MenuItem MainMenu[] = {
     {eClear,    ILI9341_BLACK},
-    {eText,     ILI9341_BLACK,"Choose SD File",EnterFileName},
+    {eText,     ILI9341_BLACK,"Choose File",EnterFileName},
     {eMenu,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},

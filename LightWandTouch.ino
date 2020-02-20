@@ -329,6 +329,9 @@ void ProcessFileOrTest(int chainnumber)
 // show progress bar
 void ShowProgressBar(int percent)
 {
+    static int lastpercent;
+    if (lastpercent && (lastpercent == percent))
+        return;
     if (percent == 0) {
         tft.fillRect(0, 0, tft.width() - 1, 15, ILI9341_LIGHTGREY);
     }
@@ -338,6 +341,7 @@ void ShowProgressBar(int percent)
     else {
         tft.fillRect(0, 0, (tft.width()) * percent / 100, 15, ILI9341_DARKGREY);
     }
+    lastpercent = percent;
 }
 
 // save or restore all the settings that are relevant
@@ -1504,7 +1508,10 @@ void BarberPole()
     r = 0, g = 0, b = 255;
     fixRGBwithGamma(&r, &g, &b);
     blue = CRGB(r, g, b);
-    for (int loop = 0; loop < 4 * BARBERCOUNT; ++loop) {
+    //ShowProgressBar(0);
+    for (int loop = 0; loop < (4 * BARBERCOUNT); ++loop) {
+        Serial.println("barber:" + String(loop));
+        //ShowProgressBar(loop * 100 / 4 * BARBERCOUNT);
         if (CheckCancel())
             return;
         for (int ledIx = 0; ledIx < stripLength; ++ledIx) {
@@ -1528,4 +1535,5 @@ void BarberPole()
         FastLED.show();
         delay(frameHold);
     }
+    //ShowProgressBar(100);
 }
