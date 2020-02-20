@@ -245,7 +245,7 @@ volatile int nTimerSeconds;
 volatile bool bStripWaiting = false;
 
 // Gramma Correction (Defalt Gamma = 2.8)
-const uint8_t /*PROGMEM*/ gammaR[] = {
+const uint8_t PROGMEM gammaR[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,
@@ -263,7 +263,7 @@ const uint8_t /*PROGMEM*/ gammaR[] = {
   160,162,164,166,168,170,172,174,177,179,181,183,185,187,190,192,
   194,196,199,201,203,206,208,210,213,215,218,220,223,225,227,230 };
 
-const uint8_t /*PROGMEM*/ gammaG[] = {
+const uint8_t PROGMEM gammaG[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -282,7 +282,7 @@ const uint8_t /*PROGMEM*/ gammaG[] = {
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
 
 
-const uint8_t /*PROGMEM*/ gammaB[] = {
+const uint8_t PROGMEM gammaB[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,

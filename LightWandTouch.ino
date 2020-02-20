@@ -84,7 +84,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 0.9");
+    tft.println("       Version 1.0");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -610,9 +610,9 @@ uint32_t FileSeek(uint32_t place)
 
 void getRGBwithGamma() {
     if (bGammaCorrection) {
-        b = gammaB[readByte(false)];
-        g = gammaG[readByte(false)];
-        r = gammaR[readByte(false)];
+        b = pgm_read_byte(&gammaB[readByte(false)]);
+        g = pgm_read_byte(&gammaG[readByte(false)]);
+        r = pgm_read_byte(&gammaR[readByte(false)]);
     }
     else {
         b = readByte(false);
@@ -623,9 +623,9 @@ void getRGBwithGamma() {
 
 void fixRGBwithGamma(byte* rp, byte* gp, byte* bp) {
     if (bGammaCorrection) {
-        *gp = gammaG[*gp];
-        *bp = gammaB[*bp];
-        *rp = gammaR[*rp];
+        *gp = pgm_read_byte(&gammaG[*gp]);
+        *bp = pgm_read_byte(&gammaB[*bp]);
+        *rp = pgm_read_byte(&gammaR[*rp]);
     }
 }
 
@@ -679,7 +679,7 @@ bool ProcessConfigFile(String filename)
                 args = line.substring(ix + 1);
                 if (!command.compareTo("PIXELS")) {
                     stripLength = args.toInt();
-                    //FastLED.updateLength(stripLength);
+                    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
                 }
                 else if (command == "BRIGHTNESS") {
                     nStripBrightness = args.toInt();
@@ -969,7 +969,12 @@ void ToggleBool(MenuItem* menu)
 // get integer values
 void GetIntegerValue(MenuItem* menu)
 {
+    // some integers needs special processing when changed, handle it here
+    int lastlength = stripLength;
     ReadNumberPad((int*)menu->value, menu->min, menu->max, menu->text);
+    if (lastlength != stripLength) {
+        FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
+    }
 }
 
 // select the filename
