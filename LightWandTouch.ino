@@ -144,8 +144,9 @@ void loop()
     // see if we got a menu match
     bool skip = false;
     bool skipmatch = false;
+    bool gotmatch = false;
     int skipper = 0;    // increment each time we have to skip one so we get the right height
-    for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
+    for (int ix = 0; !gotmatch && currentMenu[ix].op != eTerminate; ++ix) {
         // see if this is one to skip
         if (currentMenu[ix].op == eSkipFalse) {
             skipmatch = !*(bool*)currentMenu[ix].value;
@@ -171,7 +172,7 @@ void loop()
         }
         Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
         if (RangeTest(p.y, (ix + 1 - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
-            Serial.println("match: ix=" + String(ix) + " skipper=" + String(skipper));
+            gotmatch = true;
             //Serial.println("clicked on menu");
             // got one, service it
             switch (currentMenu[ix].op) {
@@ -861,14 +862,12 @@ void ToggleFilesBuiltin(MenuItem* menu)
                 // add each one
                 FileNames[NumberOfFiles] = String(BuiltInFiles[NumberOfFiles].text);
             }
-            //currentMenu = MainMenuInternal;
             currentFolder = "";
         }
         else {
             // read the SD
             currentFolder = "/";
             GetFileNamesFromSD(currentFolder);
-            //currentMenu = MainMenu;
         }
     }
 }
