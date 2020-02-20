@@ -112,6 +112,23 @@ void setup(void) {
     }
     // Now turn the LED off
     FastLED.clear(true);
+    // run a white dot up the display and back
+    FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
+    for (int ix = 0; ix < stripLength; ++ix) {
+        leds[ix] = CRGB(255,255,255);
+        if (ix)
+            leds[ix - 1] = ILI9341_BLACK;
+        FastLED.show();
+        delay(1);
+    }
+    for (int ix = stripLength - 1; ix >= 0; --ix) {
+        leds[ix] = CRGB(255, 255, 255);
+        if (ix)
+            leds[ix + 1] = ILI9341_BLACK;
+        FastLED.show();
+        delay(1);
+    }
+    FastLED.clear(true);
     menustack[menuLevel = 0] = MainMenu;
 }
 
