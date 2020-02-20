@@ -160,10 +160,7 @@ void loop()
     // see if one of the go buttons
     if (digitalRead(AuxButton) == LOW || (RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
         //Serial.println("GO...");
-        tft.fillScreen(ILI9341_BLACK);
-        tft.setCursor(0, 15);
-        tft.print(currentFolder + FileNames[CurrentFileIndex]);
-        ProcessFileOrTest(0);
+        ProcessFileOrTest();
         bMenuChanged = true;
         return;
     }
@@ -244,17 +241,17 @@ void loop()
 }
 
 // run file or built-in
-void ProcessFileOrTest(int chainnumber)
+void ProcessFileOrTest()
 {
     char line[17];
+    DisplayCurrentFile(false);
     if (startDelay) {
-        FastLED.show();
         // set a timer
         nTimerSeconds = startDelay;
         EventTimers.every(1000L, SecondsTimer);
         while (nTimerSeconds) {
             bTurnOnBacklight = true;
-            Serial.println("timer "+String(nTimerSeconds));
+            Serial.println("timer " + String(nTimerSeconds));
             tft.setCursor(0, 75);
             tft.setTextSize(2);
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -268,61 +265,74 @@ void ProcessFileOrTest(int chainnumber)
         tft.setCursor(0, 75);
         tft.print("                         ");
     }
+    int chainCount = bChainFiles ? FileCountOnly() - CurrentFileIndex : 1;
+    int lastFileIndex = CurrentFileIndex;
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
-    for (int counter = repeatCount; counter > 0; counter--) {
-        // fill the progress bar
-        ShowProgressBar(0);
-        if (repeatCount > 1) {
-            tft.setCursor(0, 100);
-            tft.setTextSize(2);
-            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-            tft.print("Repeats Left: " + String(counter) + "   ");
+    while (chainCount-- > 0) {
+        DisplayCurrentFile(false);
+        if (bChainFiles) {
+            tft.setCursor(0, 60);
+            tft.print("Chained Files Left: " + String(chainCount) + "    ");
         }
-        //if (chainnumber) {
-        //    lcd.setCursor(13, 1);
-        //    char line[10];
-        //    sprintf(line, "%2d", chainnumber);
-        //    lcd.print(line);
-        //}
-        //lcd.setCursor(0, 0);
-        // only display if a file
-        if (bShowBuiltInTests) {
-            // run the test
-            (*BuiltInFiles[CurrentFileIndex].function)();
-        }
-        else {
-            // output the file
-            SendFile(FileNames[CurrentFileIndex]);
-        }
-        if (bCancelRun) {
-            bCancelRun = false;
-            break;
-        }
-        ShowProgressBar(0);
-        if (counter > 1) {
-            if (repeatDelay) {
-                FastLED.clear(true);
-                // start timer
-                nTimerSeconds = repeatDelay;
-                EventTimers.every(1000L, SecondsTimer);
-                while (nTimerSeconds) {
-                    bTurnOnBacklight = true;
-                    tft.setCursor(0, 75);
-                    tft.setTextSize(2);
-                    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                    tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
-                    tft.print("   ");
-                    delay(1000);
-                    EventTimers.tick();
-                    if (CheckCancel())
-                        break;
-                    delay(10);
+        // process the repeats and waits for each file in the list
+        for (int counter = repeatCount; counter > 0; counter--) {
+            // fill the progress bar
+            ShowProgressBar(0);
+            if (repeatCount > 1) {
+                tft.setCursor(0, 100);
+                tft.setTextSize(2);
+                tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+                tft.print("Repeats Left: " + String(counter) + "   ");
+            }
+            if (bShowBuiltInTests) {
+                // run the test
+                (*BuiltInFiles[CurrentFileIndex].function)();
+            }
+            else {
+                // output the file
+                SendFile(FileNames[CurrentFileIndex]);
+            }
+            if (bCancelRun) {
+                bCancelRun = false;
+                break;
+            }
+            ShowProgressBar(0);
+            if (counter > 1) {
+                if (repeatDelay) {
+                    FastLED.clear(true);
+                    // start timer
+                    nTimerSeconds = repeatDelay;
+                    EventTimers.every(1000L, SecondsTimer);
+                    while (nTimerSeconds) {
+                        bTurnOnBacklight = true;
+                        tft.setCursor(0, 80);
+                        tft.setTextSize(2);
+                        tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+                        tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
+                        tft.print("   ");
+                        delay(1000);
+                        EventTimers.tick();
+                        if (CheckCancel())
+                            break;
+                        delay(10);
+                    }
+                    tft.setCursor(0, 80);
+                    tft.print("                           ");
                 }
-                tft.setCursor(0, 75);
-                tft.print("                           ");
             }
         }
+        if (bShowBuiltInTests)
+            break;
+        // see if we are chaining, if so, get the next file, if a folder we're done
+        if (bChainFiles) {
+            // grab the next file
+            if (CurrentFileIndex < NumberOfFiles - 1)
+                ++CurrentFileIndex;
+            if (IsFolder(CurrentFileIndex))
+                break;
+        }
     }
+    CurrentFileIndex = lastFileIndex;
     FastLED.clear(true);
 }
 
@@ -1589,4 +1599,31 @@ void SaveEepromSettings(MenuItem* menu)
 void LoadEepromSettings(MenuItem* menu)
 {
     SaveSettings(false, true);
+}
+
+// count the actual files
+int FileCountOnly()
+{
+    int count = 0;
+    // ignore folders, at the end
+    for (int files = 0; files < NumberOfFiles; ++files) {
+        if (!IsFolder(count))
+            ++count;
+    }
+    return count;
+}
+
+// return true if current file is folder
+bool IsFolder(int index)
+{
+    return FileNames[CurrentFileIndex][0] == NEXT_FOLDER_CHAR
+        || FileNames[CurrentFileIndex][0] == PREVIOUS_FOLDER_CHAR;
+}
+
+// show the current file
+void DisplayCurrentFile(bool top)
+{
+    tft.fillScreen(ILI9341_BLACK);
+    tft.setCursor(0, top ? 0 : 15);
+    tft.print(currentFolder + FileNames[CurrentFileIndex]);
 }
