@@ -94,11 +94,11 @@ void setup(void) {
     leds[4] = leds[5] = CRGB::Green;
     leds[8] = leds[9] = CRGB::Blue;
     leds[12] = leds[13] = CRGB::White;
-    for (int ix = 0; ix < 255; ++ix) {
+    for (int ix = 0; ix < 255; ix += 5) {
         FastLED.setBrightness(ix);
         FastLED.show();
     }
-    for (int ix = 255; ix; --ix) {
+    for (int ix = 255; ix >= 0; ix -= 5) {
         FastLED.setBrightness(ix);
         FastLED.show();
     }
@@ -143,33 +143,34 @@ void loop()
     }
     // see if we got a menu match
     bool skip = false;
+    bool skipmatch = false;
     int skipper = 0;    // increment each time we have to skip one so we get the right height
     for (int ix = 0; currentMenu[ix].op != eTerminate; ++ix) {
         // see if this is one to skip
         if (currentMenu[ix].op == eSkipFalse) {
-            Serial.println("false");
-            ++skipper;
-            if (!*(bool*)currentMenu[ix].value) {
-                skip = true;
-            }
-            continue;
+            skipmatch = !*(bool*)currentMenu[ix].value;
+            skip = true;
         }
-        if (currentMenu[ix].op == eSkipTrue) {
-            Serial.println("true");
-            ++skipper;
-            if (*(bool*)currentMenu[ix].value) {
-                skip = true;
-            }
-            continue;
+        else if (currentMenu[ix].op == eSkipTrue) {
+            skipmatch = *(bool*)currentMenu[ix].value;
+            skip = true;
+        }
+        else if (currentMenu[ix].op == eClear) {
+            skip = true;
         }
         // look for a match
-        Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
         if (skip) {
-            Serial.println("skipping:" + String(ix));
             skip = false;
+            ++skipper;
             continue;
         }
-        if (RangeTest(p.y, (ix - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
+        if (skipmatch) {
+            skipmatch = false;
+            ++skipper;
+            continue;
+        }
+        Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
+        if (RangeTest(p.y, (ix + 1 - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
             Serial.println("match: ix=" + String(ix) + " skipper=" + String(skipper));
             //Serial.println("clicked on menu");
             // got one, service it

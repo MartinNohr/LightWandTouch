@@ -179,26 +179,14 @@ MenuItem DisplayMenu[] = {
 };
 MenuItem StartFileMenu[] = {
     {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"START.LWC Operations"},
-    {eText,   ILI9341_BLACK,"Erase",EraseStartFile},
-    {eText,   ILI9341_BLACK,"Save",SaveStartFile},
-    {eText,   ILI9341_BLACK,"Load",LoadStartFile},
-    {eBool,   ILI9341_BLACK,"Autoload: %s",ToggleBool,&bAutoLoadStart,0,0,"On","Off"},
+    {eText,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
+    {eText,   ILI9341_BLACK,"Save START.LWC",SaveStartFile},
+    {eText,   ILI9341_BLACK,"Load START.LWC",LoadStartFile},
+    {eBool,   ILI9341_BLACK,"Autoload START.LWC: %s",ToggleBool,&bAutoLoadStart,0,0,"On","Off"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
-//MenuItem MainMenuInternal[] = {
-//    {eClear,  ILI9341_BLACK},
-//    {eText,   ILI9341_BLACK,"Choose Internal File",EnterFileName},
-//    {eMenu,   ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-//    {eMenu,   ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-//    {eBool,   ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-//    {eMenu,   ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
-//    {eMenu,   ILI9341_BLACK,"Other Settings",NULL,DisplayMenu},
-//    // make sure this one is last
-//    {eTerminate}
-//};
 MenuItem MainMenu[] = {
     {eClear,    ILI9341_BLACK},
     {eText,     ILI9341_BLACK,"Choose SD File",EnterFileName},
