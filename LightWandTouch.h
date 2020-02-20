@@ -19,7 +19,7 @@ int r = 0;                                // Variable for the Red Value
 bool CheckCancel();
 
 // Define the array of leds
-CRGB leds[NUM_LEDS];
+CRGB leds[NUM_LEDS * 2];
 
 // This is calibration data for the raw touch data to the screen coordinates
 // since we rotated the screen these reverse x and y
@@ -224,8 +224,10 @@ BuiltInItem BuiltInFiles[] = {
 
 // timers to run things
 auto EventTimers = timer_create_default();
+// use for countdowns in seconds
+volatile int nTimerSeconds;
 // set this to the delay time while we get the next frame
-bool bStripWaiting = false;
+volatile bool bStripWaiting = false;
 
 // Gramma Correction (Defalt Gamma = 2.8)
 const uint8_t /*PROGMEM*/ gammaR[] = {

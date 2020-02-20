@@ -53,6 +53,16 @@ bool StripDelay(void*)
     return false;
 }
 
+// counts down by seconds
+bool SecondsTimer(void*)
+{
+    if (nTimerSeconds > 0) {
+        --nTimerSeconds;
+        return true;
+    }
+    return false;
+}
+
 void setup(void) {
     tft.begin();
     delay(50);
@@ -80,14 +90,12 @@ void setup(void) {
     WriteMessage("Testing LED Strip", false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
-    //analogWrite(TFT_BRIGHT, 10);
-    //delay(2000);
+    pinMode(AuxButton, INPUT_PULLUP);
     analogWrite(TFT_BRIGHT, 255);
-    //delay(2000);
     digitalWrite(LED_BUILTIN, HIGH);
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
 #endif
-    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     // Turn the LED on, then pause
     leds[0] = leds[1] = CRGB::Red;
@@ -132,8 +140,8 @@ void loop()
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
-    // see if the go button
-    if (RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25)) {
+    // see if one of the go buttons
+    if (digitalRead(AuxButton) == LOW || (RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
         //Serial.println("GO...");
         tft.fillScreen(ILI9341_BLACK);
         tft.setCursor(0, 15);
@@ -223,11 +231,18 @@ void ProcessFileOrTest(int chainnumber)
 {
     char line[17];
     if (startDelay) {
-        for (int seconds = startDelay; seconds; --seconds) {
+        FastLED.show();
+        // set a timer
+        nTimerSeconds = startDelay;
+        EventTimers.every(1000L, SecondsTimer);
+        while (nTimerSeconds) {
+            bTurnOnBacklight = true;
+            Serial.println("timer "+String(nTimerSeconds));
             tft.setCursor(0, 75);
-            tft.print("Seconds before start: " + String(seconds));
+            tft.print("Seconds before start: " + String(nTimerSeconds));
             tft.print("   ");
-            delay(1000);
+            EventTimers.tick();
+            delay(10);
         }
         tft.setCursor(0, 75);
         tft.print("                         ");
@@ -265,13 +280,16 @@ void ProcessFileOrTest(int chainnumber)
         if (counter > 1) {
             if (repeatDelay) {
                 FastLED.clear(true);
-                for (int seconds = repeatDelay; seconds; --seconds) {
+                // start timer
+                nTimerSeconds = repeatDelay;
+                EventTimers.every(1000L, SecondsTimer);
+                while (nTimerSeconds) {
                     tft.setCursor(0, 75);
-                    tft.print("Repeat Seconds Left: " + String(seconds));
+                    tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
                     tft.print("   ");
                     delay(1000);
-                    FastLED.clear(true);
-                    delay(repeatDelay);
+                    EventTimers.tick();
+                    delay(10);
                 }
                 tft.setCursor(0, 75);
                 tft.print("                           ");
@@ -754,9 +772,11 @@ bool CheckCancel()
         tft.println("       ");
         tft.println("             ");
     }
-    if (ts.bufferEmpty())
+    if (ts.bufferEmpty() && digitalRead(AuxButton) == HIGH)
         return false;
-    TS_Point point = ReadTouch();
+    TS_Point point;
+    if (digitalRead(AuxButton) == HIGH)
+        point = ReadTouch();
     if (!bCancelPending) {
         tft.setCursor(5, tft.height() / 2);
         tft.setTextColor(ILI9341_RED, ILI9341_BLACK);
@@ -769,7 +789,7 @@ bool CheckCancel()
     }
     if (bReadyToCancel) {
         bCancelPending = false;
-        if (RangeTest(point.x, 105, 20) && RangeTest(point.y, 178, 20)) {
+        if (digitalRead(AuxButton) == LOW || (RangeTest(point.x, 105, 20) && RangeTest(point.y, 178, 20))) {
             bCancelRun = true;
             retflag = true;
         }
