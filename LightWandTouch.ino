@@ -1571,7 +1571,7 @@ void SaveSettings(bool save, bool autoload)
             char svalue[sizeof signature];
             eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
             if (strncmp(svalue, signature, sizeof signature)) {
-                WriteMessage("bad eeprom signature", true);
+                WriteMessage("bad eeprom signature\nSave Default to fix", true);
                 return;
             }
             eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
