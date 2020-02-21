@@ -99,15 +99,16 @@ const saveValues saveValueList[] = {
 
 // The menu structures
 enum eDisplayOperation {
-    eClear,     // set screen background
-    eText,      // handle text with optional %s value
-    eTextInt,   // handle text with optional %d value
-    eBool,      // handle bool using %s and on/off values
-    eMenu,      // load another menu
-    eExit,      // closes this menu
-    eSkipTrue,  // skip the next menu item if boolean is true
-    eSkipFalse, // skip the next menu item if boolean is false
-    eTerminate, // must be last in a menu
+    eClear,             // set screen background
+    eText,              // handle text with optional %s value
+    eTextInt,           // handle text with optional %d value
+    eTextCurrentFile,   // adds current basefilename for %s in string
+    eBool,              // handle bool using %s and on/off values
+    eMenu,              // load another menu
+    eExit,              // closes this menu
+    eSkipTrue,          // skip the next menu item if boolean is true
+    eSkipFalse,         // skip the next menu item if boolean is false
+    eTerminate,         // must be last in a menu
 };
 struct MenuItem {
     enum eDisplayOperation op;
@@ -129,6 +130,9 @@ void ToggleFilesBuiltin(MenuItem*);
 void EraseStartFile(MenuItem*);
 void SaveStartFile(MenuItem*);
 void LoadStartFile(MenuItem*);
+void EraseAssociatedFile(MenuItem*);
+void SaveAssociatedFile(MenuItem*);
+void LoadAssociatedFile(MenuItem*);
 void WriteMessage(String, bool error = false, int wait = 2000);
 void SaveEepromSettings(MenuItem*);
 void LoadEepromSettings(MenuItem*);
@@ -194,11 +198,21 @@ MenuItem OtherSettingsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem AssociatedFileMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eTextCurrentFile,   ILI9341_BLACK,"Erase %s.LWC",EraseAssociatedFile},
+    {eTextCurrentFile,   ILI9341_BLACK,"Save  %s.LWC",SaveAssociatedFile},
+    {eTextCurrentFile,   ILI9341_BLACK,"Load  %s.LWC",LoadAssociatedFile},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem StartFileMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eText,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
     {eText,   ILI9341_BLACK,"Save START.LWC",SaveStartFile},
     {eText,   ILI9341_BLACK,"Load START.LWC",LoadStartFile},
+    {eMenu,   ILI9341_BLACK,"Associated Files",NULL,AssociatedFileMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -210,7 +224,7 @@ MenuItem MainMenu[] = {
     {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eMenu,     ILI9341_BLACK,"START.LWC Operations",NULL,StartFileMenu},
+    {eMenu,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
     {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
     {eMenu,     ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
     {eMenu,     ILI9341_BLACK,"Other Settings",NULL,OtherSettingsMenu},

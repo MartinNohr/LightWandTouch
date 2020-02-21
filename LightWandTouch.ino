@@ -84,7 +84,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.0");
+    tft.println("       Version 1.1");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -201,6 +201,7 @@ void loop()
             switch (menustack[menuLevel][ix].op) {
             case eText:
             case eTextInt:
+            case eTextCurrentFile:
             case eBool:
                 if (menustack[menuLevel][ix].function) {
                     //Serial.println(ix);
@@ -267,10 +268,12 @@ void ProcessFileOrTest()
     }
     int chainCount = bChainFiles ? FileCountOnly() - CurrentFileIndex : 1;
     int lastFileIndex = CurrentFileIndex;
+    if (bShowBuiltInTests)
+        chainCount = 1;
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     while (chainCount-- > 0) {
         DisplayCurrentFile(false);
-        if (bChainFiles) {
+        if (bChainFiles && !bShowBuiltInTests) {
             tft.setCursor(0, 60);
             tft.print("Chained Files Left: " + String(chainCount) + "    ");
         }
@@ -648,10 +651,32 @@ void SaveStartFile(MenuItem* menu)
     WriteOrDeleteConfigFile("", false, true);
 }
 
+void EraseAssociatedFile(MenuItem* menu)
+{
+    WriteOrDeleteConfigFile(FileNames[CurrentFileIndex].c_str(), true, false);
+}
+
+void SaveAssociatedFile(MenuItem* menu)
+{
+    WriteOrDeleteConfigFile(FileNames[CurrentFileIndex].c_str(), false, false);
+}
+
+void LoadAssociatedFile(MenuItem* menu)
+{
+    String name = FileNames[CurrentFileIndex];
+    name = MakeLWCFilename(name);
+    if (ProcessConfigFile(name)) {
+        WriteMessage("Processed:\n" + name);
+    }
+    else {
+        WriteMessage("Failed reading:\n" + name, true);
+    }
+}
+
 void LoadStartFile(MenuItem* menu)
 {
-    String name = currentFolder + "START.LWC";
-    if (ProcessConfigFile(name.c_str())) {
+    String name = "START.LWC";
+    if (ProcessConfigFile(name)) {
         WriteMessage("Processed:\n" + name);
     }
     else {
@@ -665,6 +690,7 @@ bool ProcessConfigFile(String filename)
     bool retval = true;
     String filepath = currentFolder + filename;
     SdFile rdfile(filepath.c_str(), O_RDONLY);
+    Serial.println("Processing: " + filepath);
     if (rdfile.available()) {
         String line, command, args;
         char buf[100];
@@ -894,6 +920,7 @@ void ShowMenu(struct MenuItem* menu)
                 break;
             case eTextInt:
             case eText:
+            case eTextCurrentFile:
                 // increment displayable lines
                 y += LINEHEIGHT;
                 tft.setTextColor(ILI9341_WHITE, menu->back_color);
@@ -902,8 +929,10 @@ void ShowMenu(struct MenuItem* menu)
                     char line[100];
                     if (menu->op == eText)
                         sprintf(line, menu->text, (char*)menu->value);
-                    else
+                    else if (menu->op == eTextInt)
                         sprintf(line, menu->text, *(int*)menu->value);
+                    else if (menu->op == eTextCurrentFile)
+                        sprintf(line, menu->text, FileNames[CurrentFileIndex].c_str());
                     tft.print(line);
                 }
                 else {
