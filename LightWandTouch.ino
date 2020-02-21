@@ -522,9 +522,14 @@ void ReadAndDisplayFile() {
             leds[x] = CRGB(r, g, b);
             if (bShowImageDuringOutput) {
                 static bool doit = true;
+                //static int writercount = 0;
                 // output to tft
                 int yval = imgWidth - x + tft.height() - stripLength;
                 int xval = (imgHeight - y) % tft.width();
+                //if (writercount == 0) {
+                //    tft.startWrite();
+                //    writercount = 5000;
+                //}
                 // skip every other line if image too tall
                 if (imgWidth > tft.height()) {
                     yval = (imgWidth - x) / 2 + tft.height() - stripLength / 2;
@@ -533,6 +538,11 @@ void ReadAndDisplayFile() {
                 }
                 if (doit)
                     tft.drawPixel(xval, yval, tft.color565(r, g, b));
+                //if (doit)
+                //    tft.writePixel(xval, yval, tft.color565(r, g, b));
+                //if (--writercount == 0) {
+                //    tft.endWrite();
+                //}
             }
         }
         // wait for timer to expire before we show the next frame
