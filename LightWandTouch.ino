@@ -399,7 +399,7 @@ void SendFile(String Filename) {
     Filename.toCharArray(temp, 14);
     // see if there is an associated config file
     String cfFile = temp;
-    cfFile = MakeLWCFilename(cfFile);
+    cfFile = MakeLWCFilename(cfFile, true);
     SettingsSaveRestore(true);
     ProcessConfigFile(cfFile);
     String fn = currentFolder + temp;
@@ -633,11 +633,12 @@ void fixRGBwithGamma(byte* rp, byte* gp, byte* bp) {
 }
 
 // create the associated LWC name
-String MakeLWCFilename(String filename)
+String MakeLWCFilename(String filename, bool addext)
 {
     String cfFile = filename;
-    cfFile = cfFile.substring(0, cfFile.lastIndexOf('.') + 1);
-    cfFile += "LWC";
+    cfFile = cfFile.substring(0, cfFile.lastIndexOf('.'));
+    if(addext)
+        cfFile += ".LWC";
     return cfFile;
 }
 
@@ -664,7 +665,7 @@ void SaveAssociatedFile(MenuItem* menu)
 void LoadAssociatedFile(MenuItem* menu)
 {
     String name = FileNames[CurrentFileIndex];
-    name = MakeLWCFilename(name);
+    name = MakeLWCFilename(name, true);
     if (ProcessConfigFile(name)) {
         WriteMessage("Processed:\n" + name);
     }
@@ -745,7 +746,7 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
         filepath = currentFolder + "START.LWC";
     }
     else {
-        filepath = currentFolder + MakeLWCFilename(filename);
+        filepath = currentFolder + MakeLWCFilename(filename, true);
     }
     if (remove) {
         if (SD.remove(filepath.c_str())) {
@@ -895,6 +896,7 @@ void ShowMenu(struct MenuItem* menu)
 {
     int y = 0;
     int x = 0;
+    char line[100];
     tft.setTextSize(2);
     bool skip = false;
     // loop through the menu
@@ -926,17 +928,19 @@ void ShowMenu(struct MenuItem* menu)
                 tft.setTextColor(ILI9341_WHITE, menu->back_color);
                 tft.setCursor(x, y);
                 if (menu->value) {
-                    char line[100];
                     if (menu->op == eText)
                         sprintf(line, menu->text, (char*)menu->value);
                     else if (menu->op == eTextInt)
                         sprintf(line, menu->text, *(int*)menu->value);
-                    else if (menu->op == eTextCurrentFile)
-                        sprintf(line, menu->text, FileNames[CurrentFileIndex].c_str());
                     tft.print(line);
                 }
                 else {
-                    tft.print(menu->text);
+                    if (menu->op == eTextCurrentFile) {
+                        sprintf(line, menu->text, MakeLWCFilename(FileNames[CurrentFileIndex], false).c_str());
+                        tft.print(line);
+                    }
+                    else
+                        tft.print(menu->text);
                 }
                 break;
             case eBool:
