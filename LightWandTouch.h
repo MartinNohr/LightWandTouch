@@ -165,7 +165,6 @@ MenuItem WandMoreMenu[] = {
     {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
     {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
-    {eBool,   ILI9341_BLACK,"Display Output: %s",ToggleBool,&bShowImageDuringOutput,0,0,"Yes","No"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -175,6 +174,7 @@ MenuItem WandMenu[] = {
     {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
     {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
     {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
+    {eBool,   ILI9341_BLACK,"Display Output: %s",ToggleBool,&bShowImageDuringOutput,0,0,"Yes","No"},
     {eMenu,   ILI9341_BLACK,"More Settings",NULL,WandMoreMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last

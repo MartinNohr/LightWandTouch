@@ -521,12 +521,18 @@ void ReadAndDisplayFile() {
             }
             leds[x] = CRGB(r, g, b);
             if (bShowImageDuringOutput) {
+                static bool doit = true;
                 // output to tft
                 int yval = imgWidth - x + tft.height() - stripLength;
                 int xval = (imgHeight - y) % tft.width();
-                //if (xval == 0)
-                //    tft.fillRect(0, yval, tft.width(), tft.height() + yval, ILI9341_BLACK);
-                tft.drawPixel(xval, yval, tft.color565(r, g, b));
+                // skip every other line if image too tall
+                if (imgWidth > tft.height()) {
+                    yval = (imgWidth - x) / 2 + tft.height() - stripLength / 2;
+                    xval = ((imgHeight - y) / 2) % tft.width();
+                    doit = !doit;
+                }
+                if (doit)
+                    tft.drawPixel(xval, yval, tft.color565(r, g, b));
             }
         }
         // wait for timer to expire before we show the next frame
