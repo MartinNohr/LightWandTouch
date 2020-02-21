@@ -158,13 +158,21 @@ MenuItem RepeatMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem WandMoreMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
+    {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
+    {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem WandMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
-    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
     {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
-    {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
-    {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
+    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
+    {eMenu,   ILI9341_BLACK,"More Settings",NULL,WandMoreMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -210,8 +218,8 @@ MenuItem AssociatedFileMenu[] = {
 MenuItem StartFileMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eText,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
-    {eText,   ILI9341_BLACK,"Save START.LWC",SaveStartFile},
-    {eText,   ILI9341_BLACK,"Load START.LWC",LoadStartFile},
+    {eText,   ILI9341_BLACK,"Save  START.LWC",SaveStartFile},
+    {eText,   ILI9341_BLACK,"Load  START.LWC",LoadStartFile},
     {eMenu,   ILI9341_BLACK,"Associated Files",NULL,AssociatedFileMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last

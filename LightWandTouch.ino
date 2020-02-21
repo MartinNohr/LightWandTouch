@@ -84,7 +84,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.1");
+    tft.println("       Version 1.2");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -96,6 +96,7 @@ void setup(void) {
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
 #endif
     FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
+    //FastLED.setTemperature(CRGB(127, 127, 200));
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     // Turn the LED on, then pause
     leds[0] = leds[1] = CRGB::Red;
@@ -749,7 +750,9 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
         filepath = currentFolder + MakeLWCFilename(filename, true);
     }
     if (remove) {
-        if (SD.remove(filepath.c_str())) {
+        if (!SD.exists(filepath.c_str()))
+            WriteMessage("Not Found:\n" + filepath);
+        else if (SD.remove(filepath.c_str())) {
             WriteMessage("Erased:\n" + filepath);
         }
         else {
