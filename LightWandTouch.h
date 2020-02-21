@@ -57,6 +57,7 @@ int repeatDelay = 0;                      // Variable for delay between repeats
 int repeatCount = 1;                      // Variable to keep track of number of repeats
 int nStripBrightness = 10;                // Variable and default for the Brightness of the strip
 bool bGammaCorrection = true;             // set to use the gamma table
+bool bShowImageDuringOutput = false;      // show the image on the tft during output to the LEDs
 bool bAutoLoadSettings = false;           // set to automatically load saved settings from eeprom
 //bool bAutoLoadStart = true;               // set to automatically load the start.lwc file
 bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
@@ -95,6 +96,7 @@ const saveValues saveValueList[] = {
     {&bShowBuiltInTests,sizeof(bShowBuiltInTests)},
     {&bScaleHeight,sizeof(bScaleHeight)},
     {&bChainFiles,sizeof(bChainFiles)},
+    {&bShowImageDuringOutput,sizeof(bShowImageDuringOutput)},
 };
 
 // The menu structures
@@ -163,6 +165,7 @@ MenuItem WandMoreMenu[] = {
     {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
     {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
+    {eBool,   ILI9341_BLACK,"Display Output: %s",ToggleBool,&bShowImageDuringOutput,0,0,"Yes","No"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}

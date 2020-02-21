@@ -73,7 +73,7 @@ void setup(void) {
     tft.setRotation(1);
     if (!ts.begin()) {
         WriteMessage("Failed starting touch screen", true);
-        Serial.println("Couldn't start touchscreen controller");
+        //Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
     SaveSettings(false, true);
@@ -520,6 +520,14 @@ void ReadAndDisplayFile() {
                 continue;
             }
             leds[x] = CRGB(r, g, b);
+            if (bShowImageDuringOutput) {
+                // output to tft
+                int yval = imgWidth - x + tft.height() - stripLength;
+                int xval = (imgHeight - y) % tft.width();
+                //if (xval == 0)
+                //    tft.fillRect(0, yval, tft.width(), tft.height() + yval, ILI9341_BLACK);
+                tft.drawPixel(xval, yval, tft.color565(r, g, b));
+            }
         }
         // wait for timer to expire before we show the next frame
         while (bStripWaiting)
@@ -1612,7 +1620,7 @@ void SaveSettings(bool save, bool autoload)
             }
             eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
             // if autoload, exit if the save value is not true
-            if (autoload && ix == 0) {
+            if (autoload && ix == 1) {
                 if (!bAutoLoadSettings) {
                     return;
                 }
