@@ -1572,6 +1572,91 @@ void OppositeRunningDots()
     }
 }
 
+// checkerboard
+void CheckerBoard()
+{
+    byte r, g, b;
+    int size = sqrt(stripLength);
+    for (int x = 0; x < size * 2; ++x) {
+        if (CheckCancel())
+            return;
+        // one row with BW, and the next WB
+        // write pixels alternating white and black
+        for (int y = 0; y < stripLength; ++y) {
+            if (CheckCancel())
+                return;
+            r = g = b = ((((y / size) % 2) ^ (x % 2)) & 1) ? 0 : 255;
+            fixRGBwithGamma(&r, &g, &b);
+            leds[y] = CRGB(r, g, b);
+        }
+        FastLED.show();
+        delay(frameHold);
+    }
+}
+
+// show random bars of lights with blacks between, 50 times
+void RandomBars()
+{
+    byte r, g, b;
+    srand(millis());
+    char line[] = "                ";
+    //    lcd.setCursor(0, 1);
+    //    lcd.write(line, 16);
+    for (int pass = 0; pass < 50; ++pass) {
+        if (CheckCancel())
+            return;
+        sprintf(line, "%2d/50", pass + 1);
+        //lcd.setCursor(10, 0);
+        //lcd.print(line);
+        if (pass % 2) {
+            // odd numbers, clear
+            FastLED.clear();
+        }
+        else {
+            // even numbers, show bar
+            r = random(0, 255);
+            g = random(0, 255);
+            b = random(0, 255);
+            fixRGBwithGamma(&r, &g, &b);
+            // fill the strip color
+            //FastLED.fill(strip.Color(r, g, b), 0, stripLength);
+            for (int ix = 0; ix < stripLength; ++ix) {
+                leds[ix] = CRGB(r, g, b);
+            }
+        }
+        FastLED.show();
+        delay(frameHold);
+    }
+}
+
+// show random bars of lights, 50 times
+void RandomColors()
+{
+    byte r, g, b;
+    srand(millis());
+    char line[] = "                ";
+    //    lcd.setCursor(0, 1);
+    //    lcd.write(line, 16);
+    for (int pass = 0; pass < 50; ++pass) {
+        if (CheckCancel())
+            return;
+        sprintf(line, "%2d/50", pass + 1);
+        //lcd.setCursor(10, 0);
+        //lcd.print(line);
+        r = random(0, 255);
+        g = random(0, 255);
+        b = random(0, 255);
+        fixRGBwithGamma(&r, &g, &b);
+        // fill the strip color
+        //strip.fill(strip.Color(r, g, b), 0, stripLength);
+        for (int ix = 0; ix < stripLength; ++ix) {
+            leds[ix] = CRGB(r, g, b);
+        }
+        FastLED.show();
+        delay(frameHold);
+    }
+}
+
 #define BARBERSIZE 10
 #define BARBERCOUNT 40
 void BarberPole()

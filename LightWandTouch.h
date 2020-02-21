@@ -145,6 +145,9 @@ void TestMeteor();
 void TestBouncingBalls();
 void BarberPole();
 void OppositeRunningDots();
+void CheckerBoard();
+void RandomBars();
+void RandomColors();
 
 // adjustment values
 int nBouncingBallsCount = 4;
@@ -261,6 +264,9 @@ BuiltInItem BuiltInFiles[] = {
     {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
     {"Cylon",TestCylon},
     {"Meteor",TestMeteor},
+    {"CheckerBoard",CheckerBoard},
+    {"Random Bars",RandomBars},
+    {"Random Colors",RandomColors},
 };
 
 // timers to run things
