@@ -148,6 +148,7 @@ void OppositeRunningDots();
 void CheckerBoard();
 void RandomBars();
 void RandomColors();
+void TestTwinkle();
 
 // adjustment values
 int nBouncingBallsCount = 4;
@@ -267,6 +268,7 @@ BuiltInItem BuiltInFiles[] = {
     {"CheckerBoard",CheckerBoard},
     {"Random Bars",RandomBars},
     {"Random Colors",RandomColors},
+    {"Twinkle",TestTwinkle},
 };
 
 // timers to run things

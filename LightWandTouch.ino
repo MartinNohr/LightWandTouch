@@ -1702,6 +1702,27 @@ void BarberPole()
     //ShowProgressBar(100);
 }
 
+void TestTwinkle() {
+    TwinkleRandom(200, frameHold, false);
+}
+
+void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne) {
+    FastLED.clear();
+    byte brightness = (255 * nStripBrightness) / 100;
+
+    for (int i = 0; i < Count; i++) {
+        if (CheckCancel())
+            return;
+        leds[random(stripLength)] = CRGB(random(0, brightness), random(0, brightness), random(0, brightness));
+        FastLED.show();
+        delay(SpeedDelay);
+        if (OnlyOne) {
+            FastLED.clear();
+        }
+    }
+    delay(SpeedDelay);
+}
+
 // save some settings in the eeprom
 // if autoload is true, check the first flag, and load the rest if it is true
 void SaveSettings(bool save, bool autoload)
