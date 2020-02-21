@@ -691,8 +691,8 @@ bool ProcessConfigFile(String filename)
     bool retval = true;
     String filepath = currentFolder + filename;
     SdFile rdfile(filepath.c_str(), O_RDONLY);
-    Serial.println("Processing: " + filepath);
     if (rdfile.available()) {
+        //Serial.println("Processing: " + filepath);
         String line, command, args;
         char buf[100];
         while (rdfile.fgets(buf, sizeof(buf), "\n")) {
@@ -1658,8 +1658,8 @@ int FileCountOnly()
 // return true if current file is folder
 bool IsFolder(int index)
 {
-    return FileNames[CurrentFileIndex][0] == NEXT_FOLDER_CHAR
-        || FileNames[CurrentFileIndex][0] == PREVIOUS_FOLDER_CHAR;
+    return FileNames[index][0] == NEXT_FOLDER_CHAR
+        || FileNames[index][0] == PREVIOUS_FOLDER_CHAR;
 }
 
 // show the current file
