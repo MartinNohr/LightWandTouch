@@ -906,7 +906,7 @@ TS_Point ReadTouch()
     Serial.print("("); Serial.print(x);
     Serial.print(", "); Serial.print(y);
     Serial.println(")");
-    while (ts.touched()) {
+    while (ts.touched() || digitalRead(AuxButton) == LOW) {
         EventTimers.tick();
     }
     ts.getPoint();
