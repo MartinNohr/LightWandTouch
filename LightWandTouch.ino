@@ -63,6 +63,34 @@ bool SecondsTimer(void*)
     return false;
 }
 
+void ShowWhiteBalance()
+{
+    //tft.fillRect(10, 10, 100, 200, ILI9341_GREEN);
+    //delay(2000);
+
+    // draw a gradient
+    int x, y;
+    uint16_t r, g, b, yr, yg, yb, buf[320];
+    tft.startWrite();
+    for (y = 0; y < tft.height(); ++y) {
+        for (x = 0; x < tft.width(); ++x) {
+            yr = map(y, 0, tft.height(), 255, 0);
+            yg = map(y, 0, tft.height(), 0, 255);
+            yb = map(y, 0, tft.height(), 255, 0);
+            r = map(x, 0, tft.width(), 0, 255);
+            g = map(x, 0, tft.width(), 0, 255);
+            b = map(x, 0, tft.width(), 255, 0);
+            buf[x] = tft.color565(max(r, yr), max(g, yg), max(b, yb));
+            //tft.writePixel(x, y, tft.color565(max(r, yr), max(g, yg), max(b, yb)));
+            //tft.writeFillRect(10, 10, 100, 200, ILI9341_RED);
+        }
+        tft.setAddrWindow(0, y, 320, y + 1);
+        //tft.setCursor(x, y);
+        tft.writePixels(buf, 320, false);
+    }
+    tft.endWrite();
+}
+
 void setup(void) {
     tft.begin();
     delay(50);
@@ -87,7 +115,7 @@ void setup(void) {
     tft.println("       Version 1.2");
     tft.println("       Martin Nohr");
     setupSDcard();
-    WriteMessage("Testing LED Strip", false, 10);
+    WriteMessage(" Testing LED Strip", false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
     pinMode(AuxButton, INPUT_PULLUP);
@@ -131,6 +159,8 @@ void setup(void) {
     }
     FastLED.clear(true);
     menustack[menuLevel = 0] = MainMenu;
+    //ShowWhiteBalance();
+    //delay(5000);
 }
 
 bool bMenuChanged = true;
@@ -283,7 +313,8 @@ void ProcessFileOrTest()
             // fill the progress bar
             ShowProgressBar(0);
             if (repeatCount > 1) {
-                tft.setCursor(0, 100);
+                tft.drawRoundRect(0, 95, 240, 24, 10, ILI9341_BLUE);
+                tft.setCursor(7, 100);
                 tft.setTextSize(2);
                 tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
                 tft.print("Repeats Left: " + String(counter) + "   ");
@@ -827,6 +858,7 @@ void ShowGo()
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
     tft.print((bShowBuiltInTests ? String("*") : currentFolder) + FileNames[CurrentFileIndex].substring(0, FileNames[CurrentFileIndex].lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
+    tft.fillRoundRect(tft.width() - 52, tft.height() - 52, 49, 49, 10, ILI9341_BLUE);
     tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
     tft.setCursor(tft.width() - 40, tft.height() - 34);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
