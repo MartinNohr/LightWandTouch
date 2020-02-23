@@ -3,6 +3,12 @@
 */
 // set this to calibrate the touch screen
 #define CALIBRATE 0
+#include <SPI.h>				// must include this here (or else IDE can't find it)
+
+//#include <PDQ_GFX.h>				// PDQ: Core graphics library
+//#include "PDQ_ILI9341_config.h"			// PDQ: ILI9341 pins and other setup for this sketch
+//#include <PDQ_ILI9341.h>			// PDQ: Hardware-specific driver library
+//PDQ_ILI9341 tft;			// PDQ: create LCD object (using pins in "PDQ_ILI9341_config.h")
 #include "LightWandTouch.h"
 
 #define TIMERSTEPS 10
@@ -183,13 +189,14 @@ void loop()
         bMenuChanged = false;
     }
 
-    // Retrieve a point  
     TS_Point p = ReadTouch();
+    // Retrieve a point  
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
     Serial.println(")");
     // see if one of the go buttons
-    if (digitalRead(AuxButton) == LOW || (RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
+    delay(100);
+    if ((RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
         //Serial.println("GO...");
         ProcessFileOrTest();
         bMenuChanged = true;
@@ -283,7 +290,7 @@ void ProcessFileOrTest()
         EventTimers.every(1000L, SecondsTimer);
         while (nTimerSeconds) {
             bTurnOnBacklight = true;
-            Serial.println("timer " + String(nTimerSeconds));
+            //Serial.println("timer " + String(nTimerSeconds));
             tft.setCursor(0, 75);
             tft.setTextSize(2);
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -873,9 +880,19 @@ TS_Point ReadTouch()
     TS_Point p = ts.getPoint();
     // eat the ones with not enough pressure
     while (p.z < 35 || p.z > 250) {
-        //while (p.z < 35 || p.z > 250 || p.y < 100 || p.x < 100) {
         p = ts.getPoint();
         EventTimers.tick();
+        // return if aux button
+        if (digitalRead(AuxButton) == LOW) {
+            delay(50);  // debounce
+            if (digitalRead(AuxButton) == LOW) {
+                // pretend this is the go button
+                p.x = TS_MINY + 428;
+                p.y = TS_MAXX - 490;
+                p.z = 100;
+                break;
+            }
+        }
     }
     bTurnOnBacklight = true;
     Serial.print("X = "); Serial.print(p.x);
@@ -889,8 +906,9 @@ TS_Point ReadTouch()
     Serial.print("("); Serial.print(x);
     Serial.print(", "); Serial.print(y);
     Serial.println(")");
-    while (ts.touched())
+    while (ts.touched()) {
         EventTimers.tick();
+    }
     ts.getPoint();
     p.x = x;
     p.y = y;
