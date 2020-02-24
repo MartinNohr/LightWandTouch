@@ -1,8 +1,6 @@
 /*
     This is the Light Wand code moved over to use a graphics touch screen
 */
-// set this to calibrate the touch screen
-#define CALIBRATE 0
 #include <SPI.h>				// must include this here (or else IDE can't find it)
 
 //#include <PDQ_GFX.h>				// PDQ: Core graphics library
@@ -111,7 +109,6 @@ void setup(void) {
         while (1);
     }
     SaveSettings(false, true);
-#if !CALIBRATE
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
     tft.println("\n\n");
@@ -121,14 +118,13 @@ void setup(void) {
     tft.println("       Version 1.2");
     tft.println("       Martin Nohr");
     setupSDcard();
-    WriteMessage(" Testing LED Strip", false, 10);
+    WriteMessage("Testing LED Strip", false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
     pinMode(AuxButton, INPUT_PULLUP);
     analogWrite(TFT_BRIGHT, 255);
     digitalWrite(LED_BUILTIN, HIGH);
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
-#endif
     FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
     //FastLED.setTemperature(CRGB(127, 127, 200));
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
@@ -167,6 +163,46 @@ void setup(void) {
     menustack[menuLevel = 0] = MainMenu;
     //ShowWhiteBalance();
     //delay(5000);
+    if (digitalRead(AuxButton) == LOW) {
+        ReadCalibration();
+    }
+}
+
+// calibrate routine
+void ReadCalibration()
+{
+    tft.fillScreen(ILI9341_BLACK);
+    tft.fillCircle(0, 0, 5, ILI9341_WHITE);
+    tft.fillCircle(tft.width() - 1, 0, 5, ILI9341_WHITE);
+    tft.fillCircle(tft.width() - 1, tft.height() - 1, 5, ILI9341_WHITE);
+    tft.fillCircle(0, tft.height() - 1, 5, ILI9341_WHITE);
+    for (int ix = 0; ix < 4; ++ix) {
+        tft.setCursor(100, 50);
+        switch (ix) {
+        case 0:
+            tft.print("Top Left");
+            break;
+        case 1:
+            tft.print("Top Right");
+            break;
+        case 2:
+            tft.print("Bottom Left");
+            break;
+        case 3:
+            tft.print("Bottom Right");
+            break;
+        }
+        while (!ts.touched())
+            ;
+        TS_Point pt = ts.getPoint();
+        while (pt.z < 35 || pt.z > 250) {
+            pt = ts.getPoint();
+        }
+        Serial.println("x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
+        while (ts.touched())
+            ;
+    }
+    delay(20000);
 }
 
 bool bMenuChanged = true;
@@ -174,7 +210,6 @@ bool bMenuChanged = true;
 void loop()
 {
     EventTimers.tick();
-#if !CALIBRATE
     // See if there's any  touch data for us
     //if (ts.bufferEmpty()) {
     //    return;
@@ -266,17 +301,6 @@ void loop()
         bMenuChanged = true;
         --menuLevel;
     }
-    
-#else
-    tft.fillCircle(5, 5, 5, ILI9341_WHITE);
-    tft.fillCircle(tft.width() - 1 - 5, 5, 5, ILI9341_WHITE);
-    tft.fillCircle(tft.width() - 1 - 5, tft.height() - 1 - 5, 5, ILI9341_WHITE);
-    tft.fillCircle(5, tft.height() - 1 - 5, 5, ILI9341_WHITE);
-    if (!ts.touched()) {
-        return;
-    }
-    ReadTouch(true);
-#endif
 }
 
 // run file or built-in
@@ -855,6 +879,7 @@ void WriteMessage(String txt, bool error = false, int wait = 2000)
     tft.setTextSize(2);
     tft.fillRect(0, 0, tft.width() - 1, 32, error ? ILI9341_RED : ILI9341_GREEN);
     tft.setTextColor(error ? ILI9341_WHITE : ILI9341_BLACK, error ? ILI9341_RED : ILI9341_GREEN);
+    tft.print(" "); // looks better
     tft.print(txt);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
     delay(wait);
