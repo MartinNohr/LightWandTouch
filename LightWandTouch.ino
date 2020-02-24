@@ -193,8 +193,10 @@ void setup(void) {
 // calibrate routine
 void Calibrate()
 {
-    uint16_t xmin = 10000, ymin = 10000;
-    uint16_t xmax = 0, ymax = 0;
+    calValues.tsMINX = 10000;
+    calValues.tsMAXX = 0;
+    calValues.tsMINY = 10000;
+    calValues.tsMAXY = 0;
     tft.fillScreen(ILI9341_BLACK);
     for (int ix = 0; ix < CALIBRATION_POINTS * CALIBRATION_TRIES; ++ix) {
         switch (ix % CALIBRATION_POINTS) {
@@ -232,17 +234,17 @@ void Calibrate()
             break;
         }
         Serial.println(String(ix / CALIBRATION_POINTS) + String(ix % CALIBRATION_POINTS) + " x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
-        xmin = min(xmin, pt.x);
-        xmax = max(xmax, pt.x);
-        ymin = min(ymin, pt.y);
-        ymax = max(ymax, pt.y);
+        calValues.tsMINX = min(calValues.tsMINX, pt.x);
+        calValues.tsMAXX = max(calValues.tsMAXX, pt.x);
+        calValues.tsMINY = min(calValues.tsMINY, pt.y);
+        calValues.tsMAXY = max(calValues.tsMAXY, pt.y);
         while (ts.touched())
             pt = ts.getPoint();
     }
-    Serial.println("xmin: " + String(xmin));
-    Serial.println("xmax: " + String(xmax));
-    Serial.println("ymin: " + String(ymin));
-    Serial.println("ymax: " + String(ymax));
+    Serial.println("xmin: " + String(calValues.tsMINX));
+    Serial.println("xmax: " + String(calValues.tsMAXX));
+    Serial.println("ymin: " + String(calValues.tsMINY));
+    Serial.println("ymax: " + String(calValues.tsMAXY));
     delay(20);
 }
 
@@ -1854,10 +1856,14 @@ bool SaveSettings(bool save, bool autoload, bool onlyCalvalues)
 {
     void* blockpointer = (void*)NULL;
     for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
+        //Serial.println("savesettings ix:" + String(ix));
         if (save) {
             eeprom_write_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
-            if (ix == 2 && onlyCalvalues)   // the calvalues
+            //Serial.println("xmin:" + String(calValues.tsMINX) + " xmax:" + String(calValues.tsMAXX) + " ymin:" + String(calValues.tsMINY) + " ymax:" + String(calValues.tsMINY));
+            if (ix == 2 && onlyCalvalues) {  // the calvalues
+                //Serial.println("saving only calvalues");
                 return true;
+            }
         }
         else {  // load
             // check signature
@@ -1868,14 +1874,15 @@ bool SaveSettings(bool save, bool autoload, bool onlyCalvalues)
                 return false;
             }
             eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+            if (ix == 2 && onlyCalvalues) {   // the calvalues
+                return true;
+            }
             // if autoload, exit if the save value is not true
             if (autoload && ix == 2) {  // we use 2 here so that the signature and the calvalues are read
                 if (!bAutoLoadSettings) {
                     return true;
                 }
             }
-            if (ix == 2 && onlyCalvalues)   // the calvalues
-                return true;
         }
         blockpointer = (void*)((byte*)blockpointer + saveValueList[ix].size);
     }
