@@ -2,12 +2,32 @@
     This is the Light Wand code moved over to use a graphics touch screen
 */
 #include <SPI.h>				// must include this here (or else IDE can't find it)
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Wire.h>      // this is needed even though we aren't using it
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_STMPE610.h>
+#include <sdfat.h>
+#include <FastLED.h>
+#include <timer.h>
+#include <avr/eeprom.h>
+#include "LightWandTouch.h"
 
 //#include <PDQ_GFX.h>				// PDQ: Core graphics library
 //#include "PDQ_ILI9341_config.h"			// PDQ: ILI9341 pins and other setup for this sketch
 //#include <PDQ_ILI9341.h>			// PDQ: Hardware-specific driver library
 //PDQ_ILI9341 tft;			// PDQ: create LCD object (using pins in "PDQ_ILI9341_config.h")
-#include "LightWandTouch.h"
+
+// The STMPE610 uses hardware SPI on the shield, and #8
+#define STMPE_CS 8
+Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
+
+#define SDcsPin 4                        // SD card CS pin
+
+// The display also uses hardware SPI, plus #9 & #10
+#define TFT_CS 10
+#define TFT_DC 9
+#define TFT_BRIGHT 3
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 #define TIMERSTEPS 10
 // this gets called every second/TIMERSTEPS
@@ -108,20 +128,23 @@ void setup(void) {
         //Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
-    SaveSettings(false, true);
+    pinMode(AuxButton, INPUT_PULLUP);
+    if (!SaveSettings(false, true, false) || digitalRead(AuxButton) == LOW) {
+        Calibrate();
+        SaveSettings(true, bAutoLoadSettings, true);
+    }
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
     tft.println("\n\n");
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.2");
+    tft.println("       Version 1.3");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
-    pinMode(AuxButton, INPUT_PULLUP);
     analogWrite(TFT_BRIGHT, 255);
     digitalWrite(LED_BUILTIN, HIGH);
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
@@ -163,46 +186,64 @@ void setup(void) {
     menustack[menuLevel = 0] = MainMenu;
     //ShowWhiteBalance();
     //delay(5000);
-    if (digitalRead(AuxButton) == LOW) {
-        ReadCalibration();
-    }
 }
 
+#define CALIBRATION_TRIES 2
+#define CALIBRATION_POINTS 4
 // calibrate routine
-void ReadCalibration()
+void Calibrate()
 {
+    uint16_t xmin = 10000, ymin = 10000;
+    uint16_t xmax = 0, ymax = 0;
     tft.fillScreen(ILI9341_BLACK);
-    tft.fillCircle(0, 0, 5, ILI9341_WHITE);
-    tft.fillCircle(tft.width() - 1, 0, 5, ILI9341_WHITE);
-    tft.fillCircle(tft.width() - 1, tft.height() - 1, 5, ILI9341_WHITE);
-    tft.fillCircle(0, tft.height() - 1, 5, ILI9341_WHITE);
-    for (int ix = 0; ix < 4; ++ix) {
-        tft.setCursor(100, 50);
-        switch (ix) {
+    for (int ix = 0; ix < CALIBRATION_POINTS * CALIBRATION_TRIES; ++ix) {
+        switch (ix % CALIBRATION_POINTS) {
         case 0:
-            tft.print("Top Left");
+            tft.fillCircle(0, 0, 10, ILI9341_WHITE);
             break;
         case 1:
-            tft.print("Top Right");
+            tft.fillCircle(tft.width() - 1, 0, 10, ILI9341_WHITE);
             break;
         case 2:
-            tft.print("Bottom Left");
+            tft.fillCircle(0, tft.height() - 1, 10, ILI9341_WHITE);
             break;
         case 3:
-            tft.print("Bottom Right");
+            tft.fillCircle(tft.width() - 1, tft.height() - 1, 10, ILI9341_WHITE);
             break;
         }
+        TS_Point pt;
         while (!ts.touched())
             ;
-        TS_Point pt = ts.getPoint();
-        while (pt.z < 35 || pt.z > 250) {
+        do {
             pt = ts.getPoint();
+        } while (pt.z < 35 || pt.z > 250);
+        switch (ix % CALIBRATION_POINTS) {
+        case 0:
+            tft.fillCircle(0, 0, 10, ILI9341_BLACK);
+            break;
+        case 1:
+            tft.fillCircle(tft.width() - 1, 0, 10, ILI9341_BLACK);
+            break;
+        case 2:
+            tft.fillCircle(0, tft.height() - 1, 10, ILI9341_BLACK);
+            break;
+        case 3:
+            tft.fillCircle(tft.width() - 1, tft.height() - 1, 10, ILI9341_BLACK);
+            break;
         }
-        Serial.println("x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
+        Serial.println(String(ix / CALIBRATION_POINTS) + String(ix % CALIBRATION_POINTS) + " x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
+        xmin = min(xmin, pt.x);
+        xmax = max(xmax, pt.x);
+        ymin = min(ymin, pt.y);
+        ymax = max(ymax, pt.y);
         while (ts.touched())
-            ;
+            pt = ts.getPoint();
     }
-    delay(20000);
+    Serial.println("xmin: " + String(xmin));
+    Serial.println("xmax: " + String(xmax));
+    Serial.println("ymin: " + String(ymin));
+    Serial.println("ymax: " + String(ymax));
+    delay(20);
 }
 
 bool bMenuChanged = true;
@@ -912,8 +953,8 @@ TS_Point ReadTouch()
             delay(50);  // debounce
             if (digitalRead(AuxButton) == LOW) {
                 // pretend this is the go button
-                p.x = TS_MINY + 428;
-                p.y = TS_MAXX - 490;
+                p.x = calValues.tsMINY + 428;
+                p.y = calValues.tsMAXX - 490;
                 p.z = 100;
                 break;
             }
@@ -925,8 +966,8 @@ TS_Point ReadTouch()
     Serial.print("\tPressure = "); Serial.println(p.z);
     // Scale from ~0->4000 to tft.width using the calibration #'s
     int x, y;
-    x = map(p.y, TS_MINY, TS_MAXY, 0, tft.width());
-    y = map(p.x, TS_MINX, TS_MAXX, tft.height(), 0);
+    x = map(p.y, calValues.tsMINY, calValues.tsMAXY, 0, tft.width());
+    y = map(p.x, calValues.tsMINX, calValues.tsMAXX, tft.height(), 0);
 
     Serial.print("("); Serial.print(x);
     Serial.print(", "); Serial.print(y);
@@ -1001,8 +1042,10 @@ void ShowMenu(struct MenuItem* menu)
     char line[100];
     tft.setTextSize(2);
     bool skip = false;
+    bool sepline = false;
     // loop through the menu
     while (menu->op != eTerminate) {
+        sepline = false;
         if (skip) {
             skip = false;
         }
@@ -1044,6 +1087,7 @@ void ShowMenu(struct MenuItem* menu)
                     else
                         tft.print(menu->text);
                 }
+                sepline = true;
                 break;
             case eBool:
                 // increment displayable lines
@@ -1058,6 +1102,7 @@ void ShowMenu(struct MenuItem* menu)
                 else {
                     tft.print(menu->text);
                 }
+                sepline = true;
                 break;
             case eMenu:
             case eExit:
@@ -1065,9 +1110,12 @@ void ShowMenu(struct MenuItem* menu)
                 tft.setTextColor(ILI9341_WHITE, menu->back_color);
                 tft.setCursor(x, y);
                 tft.print(menu->text);
+                sepline = true;
                 break;
             }
         }
+        if (sepline)
+            tft.drawLine(0, y + 23, tft.width() - 58, y + 23, ILI9341_BLUE);
         ++menu;
     }
 }
@@ -1777,10 +1825,6 @@ void BarberPole()
     //ShowProgressBar(100);
 }
 
-void TestTwinkle() {
-    TwinkleRandom(200, frameHold, false);
-}
-
 void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne) {
     FastLED.clear();
     byte brightness = (255 * nStripBrightness) / 100;
@@ -1798,14 +1842,22 @@ void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne) {
     delay(SpeedDelay);
 }
 
+void TestTwinkle() {
+    TwinkleRandom(200, frameHold, false);
+}
+
 // save some settings in the eeprom
 // if autoload is true, check the first flag, and load the rest if it is true
-void SaveSettings(bool save, bool autoload)
+// return true if valid, false if failed
+// note that the calvalues must always be read
+bool SaveSettings(bool save, bool autoload, bool onlyCalvalues)
 {
     void* blockpointer = (void*)NULL;
     for (int ix = 0; ix < (sizeof saveValueList / sizeof * saveValueList); ++ix) {
         if (save) {
             eeprom_write_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
+            if (ix == 2 && onlyCalvalues)   // the calvalues
+                return true;
         }
         else {  // load
             // check signature
@@ -1813,15 +1865,17 @@ void SaveSettings(bool save, bool autoload)
             eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
             if (strncmp(svalue, signature, sizeof signature)) {
                 WriteMessage("bad eeprom signature\nSave Default to fix", true);
-                return;
+                return false;
             }
             eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
             // if autoload, exit if the save value is not true
-            if (autoload && ix == 1) {
+            if (autoload && ix == 2) {  // we use 2 here so that the signature and the calvalues are read
                 if (!bAutoLoadSettings) {
-                    return;
+                    return true;
                 }
             }
+            if (ix == 2 && onlyCalvalues)   // the calvalues
+                return true;
         }
         blockpointer = (void*)((byte*)blockpointer + saveValueList[ix].size);
     }
@@ -1837,18 +1891,19 @@ void SaveSettings(bool save, bool autoload)
         }
     }
     WriteMessage(save ? "Settings Saved" : "Settings Loaded");
+    return true;
 }
 
 // save the eeprom settings
 void SaveEepromSettings(MenuItem* menu)
 {
-    SaveSettings(true, false);
+    SaveSettings(true, false, false);
 }
 
 // load eeprom settings
 void LoadEepromSettings(MenuItem* menu)
 {
-    SaveSettings(false, true);
+    SaveSettings(false, true, false);
 }
 
 // count the actual files

@@ -1,13 +1,4 @@
 #pragma once
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <SPI.h>
-#include <Wire.h>      // this is needed even though we aren't using it
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_STMPE610.h>
-#include <sdfat.h>
-#include <FastLED.h>
-#include <timer.h>
-#include <avr/eeprom.h>
 
 #define DATA_PIN 31
 #define NUM_LEDS 144
@@ -24,29 +15,19 @@ CRGB leds[NUM_LEDS * 2];
 
 // This is calibration data for the raw touch data to the screen coordinates
 // since we rotated the screen these reverse x and y
-#define TS_MINX 226
-#define TS_MINY 166
-#define TS_MAXX 3861
-#define TS_MAXY 3790
-
-// The STMPE610 uses hardware SPI on the shield, and #8
-#define STMPE_CS 8
-Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
-
-#define SDcsPin 4                        // SD card CS pin
-
-// The display also uses hardware SPI, plus #9 & #10
-#define TFT_CS 10
-#define TFT_DC 9
-#define TFT_BRIGHT 3
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+struct {
+    uint16_t tsMINY;
+    uint16_t tsMAXX;
+    uint16_t tsMINX;
+    uint16_t tsMAXY;
+} calValues;
 
 // wand settings
 #define NEXT_FOLDER_CHAR '~'
 #define PREVIOUS_FOLDER_CHAR '^'
 String currentFolder = "/";
 SdFat SD;
-char signature[]{ "MLW" };                // set to make sure saved values are valid
+char signature[]{ "MLW00" };              // set to make sure saved values are valid, change when savevalues is changed
 int stripLength = 144;                    // Set the number of LEDs the LED Strip
 int frameHold = 10;                       // default for the frame delay 
 int lastMenuItem = -1;                    // check to see if we need to redraw menu
@@ -80,8 +61,9 @@ struct saveValues {
     int size;
 };
 const saveValues saveValueList[] = {
-    {&signature, sizeof(signature)},
-    {&bAutoLoadSettings, sizeof(bAutoLoadSettings)},
+    {&signature, sizeof(signature)},                // this must be first
+    {&calValues, sizeof(calValues)},                // this must be second
+    {&bAutoLoadSettings, sizeof(bAutoLoadSettings)},// this must be third
     {&nStripBrightness, sizeof(nStripBrightness)},
     {&frameHold, sizeof(frameHold)},
     {&startDelay, sizeof(startDelay)},
