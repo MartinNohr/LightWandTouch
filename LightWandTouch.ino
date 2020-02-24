@@ -412,7 +412,7 @@ void ProcessFileOrTest()
                     EventTimers.every(1000L, SecondsTimer);
                     while (nTimerSeconds) {
                         bTurnOnBacklight = true;
-                        tft.setCursor(0, 80);
+                        tft.setCursor(0, 75);
                         tft.setTextSize(2);
                         tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
                         tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
@@ -423,7 +423,7 @@ void ProcessFileOrTest()
                             break;
                         delay(10);
                     }
-                    tft.setCursor(0, 80);
+                    tft.setCursor(0, 75);
                     tft.print("                           ");
                 }
             }
@@ -916,9 +916,9 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
 // display message on first line
 void WriteMessage(String txt, bool error = false, int wait = 2000)
 {
-    tft.setCursor(0, 0);
+    tft.setCursor(0, 1);
     tft.setTextSize(2);
-    tft.fillRect(0, 0, tft.width() - 1, 32, error ? ILI9341_RED : ILI9341_GREEN);
+    tft.fillRect(0, 0, tft.width() - 1, 34, error ? ILI9341_RED : ILI9341_GREEN);
     tft.setTextColor(error ? ILI9341_WHITE : ILI9341_BLACK, error ? ILI9341_RED : ILI9341_GREEN);
     tft.print(" "); // looks better
     tft.print(txt);
