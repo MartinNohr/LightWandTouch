@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.3");
+    tft.println("       Version 1.4");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -431,6 +431,7 @@ void ProcessFileOrTest()
             }
         }
         if (bCancelRun) {
+            chainCount = 0;
             bCancelRun = false;
             break;
         }
@@ -444,8 +445,10 @@ void ProcessFileOrTest()
             if (IsFolder(CurrentFileIndex))
                 break;
         }
+        FastLED.clear(true);
     }
-    CurrentFileIndex = lastFileIndex;
+    if (bChainFiles)
+        CurrentFileIndex = lastFileIndex;
     FastLED.clear(true);
 }
 
@@ -862,6 +865,10 @@ bool ProcessConfigFile(String filename)
                 else if (command == "START DELAY") {
                     startDelay = args.toInt();
                 }
+                else if (command == "REVERSE IMAGE") {
+                    args.toUpperCase();
+                    bReverseImage = args[0] == 'T';
+                }
             }
         }
         rdfile.close();
@@ -908,6 +915,8 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
             line = "FRAME TIME=" + String(frameHold);
             file.println(line);
             line = "START DELAY=" + String(startDelay);
+            file.println(line);
+            line = "REVERSE IMAGE=" + String(bReverseImage ? "TRUE" : "FALSE");
             file.println(line);
             file.close();
             WriteMessage("Saved:\n" + filepath);
