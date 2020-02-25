@@ -592,10 +592,14 @@ void ReadAndDisplayFile() {
 
     long secondsLeft = 0, lastSeconds = 0;
     char num[50];
-    int lastpercent = -1;
-    for (int y = bReverseImage ? 0 : imgHeight; bReverseImage ? y < imgHeight : y > 0; bReverseImage ? ++y : --y) {
+    int lastpercent = -1, percent;
+    // note that y is 0 based and x is 0 based in the following code, the original code had y 1 based
+    for (int y = bReverseImage ? 0 : imgHeight - 1; bReverseImage ? y < imgHeight : y >= 0; bReverseImage ? ++y : --y) {
         // approximate time left
-        secondsLeft = ((long)y * frameHold / 1000L) + 1;
+        if (bReverseImage)
+            secondsLeft = ((long)(imgHeight - y) * frameHold / 1000L) + 1;
+        else
+            secondsLeft = ((long)y * frameHold / 1000L) + 1;
         if (secondsLeft != lastSeconds) {
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
             tft.setTextSize(2);
@@ -604,7 +608,7 @@ void ReadAndDisplayFile() {
             sprintf(num, "%3d seconds", secondsLeft);
             tft.print(num);
         }
-        int percent = map(imgHeight - y, 0, imgHeight, 0, 100);
+        percent = map(bReverseImage ? y : imgHeight - y, 0, imgHeight, 0, 100);
         if (lastpercent != percent && ((percent % 5) == 0) || percent > 90) {
             ShowProgressBar(percent);
             lastpercent = percent;
@@ -613,12 +617,12 @@ void ReadAndDisplayFile() {
             //tft.print(num);
         }
         int bufpos = 0;
-        //uint32_t offset = (MYBMP_BF_OFF_BITS + ((y - 1) * lineLength));
+        //uint32_t offset = (MYBMP_BF_OFF_BITS + (y * lineLength));
         //dataFile.seekSet(offset);
         for (int x = 0; x < displayWidth; x++) {
             // moved this back here because it might make it possible to reverse scan in the future
-            FileSeek((uint32_t)MYBMP_BF_OFF_BITS + (((y - 1) * lineLength) + (x * 3)));
-            //dataFile.seekSet((uint32_t)MYBMP_BF_OFF_BITS + (((y - 1) * lineLength) + (x * 3)));
+            FileSeek((uint32_t)MYBMP_BF_OFF_BITS + ((y * lineLength) + (x * 3)));
+            //dataFile.seekSet((uint32_t)MYBMP_BF_OFF_BITS + ((y * lineLength) + (x * 3)));
             getRGBwithGamma();
             // see if we want this one
             if (bScaleHeight && (x * displayWidth) % imgWidth) {
@@ -653,10 +657,11 @@ void ReadAndDisplayFile() {
         // wait for timer to expire before we show the next frame
         while (bStripWaiting)
             EventTimers.tick();
-        FastLED.show();
-        bStripWaiting = true;
         // set a timer so we can go ahead and load the next frame
+        bStripWaiting = true;
         EventTimers.in(frameHold, StripDelay);
+        // now show the lights
+        FastLED.show();
         // check keys
         if (CheckCancel())
             break;
