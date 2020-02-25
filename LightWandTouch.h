@@ -56,6 +56,7 @@ int NumberOfFiles = 0;
 String FileNames[MAX_FILES];
 bool bShowBuiltInTests = false;         // list the internal file instead of the SD card
 bool bReverseImage = false;             // read the file lines in reverse
+bool bMirrorPlayImage = false;          // play the file twice, 2nd time reversed
 
 struct saveValues {
     void* val;
@@ -81,6 +82,7 @@ const saveValues saveValueList[] = {
     {&bChainFiles,sizeof(bChainFiles)},
     {&bShowImageDuringOutput,sizeof(bShowImageDuringOutput)},
     {&bReverseImage,sizeof(bReverseImage)},
+    {&bMirrorPlayImage,sizeof(bMirrorPlayImage)},
 };
 
 // The menu structures
@@ -154,6 +156,7 @@ MenuItem WandMoreMenu[] = {
     {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
     {eBool,   ILI9341_BLACK,"Reverse Image: %s",ToggleBool,&bReverseImage,0,0,"Yes","No"},
+    {eBool,   ILI9341_BLACK,"Play Mirror Image: %s",ToggleBool,&bMirrorPlayImage,0,0,"Yes","No"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}

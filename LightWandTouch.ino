@@ -515,7 +515,13 @@ void SendFile(String Filename) {
     dataFile.open(fn.c_str(), O_READ);
     // if the file is available send it to the LED's
     if (dataFile.available()) {
-        ReadAndDisplayFile();
+        for (int cnt = bMirrorPlayImage ? 2 : 1; cnt; --cnt) {
+            ReadAndDisplayFile();
+            bReverseImage = !bReverseImage; // note this will be restored by SettingsSaveRestore
+            dataFile.rewind();
+            if (CheckCancel())
+                break;
+        }
         dataFile.close();
     }
     else {
