@@ -54,7 +54,8 @@ int CurrentFileIndex = 0;
 int NumberOfFiles = 0;
 #define MAX_FILES 25
 String FileNames[MAX_FILES];
-bool bShowBuiltInTests = false;
+bool bShowBuiltInTests = false;         // list the internal file instead of the SD card
+bool bReverseImage = false;             // read the file lines in reverse
 
 struct saveValues {
     void* val;
@@ -79,6 +80,7 @@ const saveValues saveValueList[] = {
     {&bScaleHeight,sizeof(bScaleHeight)},
     {&bChainFiles,sizeof(bChainFiles)},
     {&bShowImageDuringOutput,sizeof(bShowImageDuringOutput)},
+    {&bReverseImage,sizeof(bReverseImage)},
 };
 
 // The menu structures
@@ -151,6 +153,7 @@ MenuItem WandMoreMenu[] = {
     {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
     {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
+    {eBool,   ILI9341_BLACK,"Reverse Image: %s",ToggleBool,&bReverseImage,0,0,"Yes","No"},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}

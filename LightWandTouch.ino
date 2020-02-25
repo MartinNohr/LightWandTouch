@@ -120,7 +120,6 @@ void setup(void) {
     delay(50);
     Serial.begin(115200);
     Serial.println(F("Light Wand Touch"));
-    //Serial.println("Touchscreen started");
     tft.fillScreen(ILI9341_BLACK);
     tft.setRotation(1);
     if (!ts.begin()) {
@@ -128,6 +127,7 @@ void setup(void) {
         //Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
+    //Serial.println("Touchscreen started");
     pinMode(AuxButton, INPUT_PULLUP);
     if (!SaveSettings(false, true, false) || digitalRead(AuxButton) == LOW) {
         Calibrate();
@@ -233,7 +233,7 @@ void Calibrate()
             tft.fillCircle(tft.width() - 1, tft.height() - 1, 10, ILI9341_BLACK);
             break;
         }
-        Serial.println(String(ix / CALIBRATION_POINTS) + String(ix % CALIBRATION_POINTS) + " x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
+        //Serial.println(String(ix / CALIBRATION_POINTS) + String(ix % CALIBRATION_POINTS) + " x=" + String(pt.x) + " y=" + String(pt.y) + " z=" + String(pt.z));
         calValues.tsMINX = min(calValues.tsMINX, pt.x);
         calValues.tsMAXX = max(calValues.tsMAXX, pt.x);
         calValues.tsMINY = min(calValues.tsMINY, pt.y);
@@ -241,10 +241,10 @@ void Calibrate()
         while (ts.touched())
             pt = ts.getPoint();
     }
-    Serial.println("xmin: " + String(calValues.tsMINX));
-    Serial.println("xmax: " + String(calValues.tsMAXX));
-    Serial.println("ymin: " + String(calValues.tsMINY));
-    Serial.println("ymax: " + String(calValues.tsMAXY));
+    //Serial.println("xmin: " + String(calValues.tsMINX));
+    //Serial.println("xmax: " + String(calValues.tsMAXX));
+    //Serial.println("ymin: " + String(calValues.tsMINY));
+    //Serial.println("ymax: " + String(calValues.tsMAXY));
     delay(20);
 }
 
@@ -269,9 +269,9 @@ void loop()
 
     TS_Point p = ReadTouch();
     // Retrieve a point  
-    Serial.print("("); Serial.print(p.x);
-    Serial.print(", "); Serial.print(p.y);
-    Serial.println(")");
+    //Serial.print("("); Serial.print(p.x);
+    //Serial.print(", "); Serial.print(p.y);
+    //Serial.println(")");
     // see if one of the go buttons
     delay(100);
     if ((RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
@@ -593,7 +593,7 @@ void ReadAndDisplayFile() {
     long secondsLeft = 0, lastSeconds = 0;
     char num[50];
     int lastpercent = -1;
-    for (int y = imgHeight; y > 0; y--) {
+    for (int y = bReverseImage ? 0 : imgHeight; bReverseImage ? y < imgHeight : y > 0; bReverseImage ? ++y : --y) {
         // approximate time left
         secondsLeft = ((long)y * frameHold / 1000L) + 1;
         if (secondsLeft != lastSeconds) {
@@ -922,7 +922,7 @@ void WriteMessage(String txt, bool error = false, int wait = 2000)
     tft.setTextSize(2);
     tft.fillRect(0, 0, tft.width() - 1, 34, error ? ILI9341_RED : ILI9341_GREEN);
     tft.setTextColor(error ? ILI9341_WHITE : ILI9341_BLACK, error ? ILI9341_RED : ILI9341_GREEN);
-    tft.print(" "); // looks better
+    //tft.print(" "); // looks better
     tft.print(txt);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
     delay(wait);
@@ -963,17 +963,17 @@ TS_Point ReadTouch()
         }
     }
     bTurnOnBacklight = true;
-    Serial.print("X = "); Serial.print(p.x);
-    Serial.print("\tY = "); Serial.print(p.y);
-    Serial.print("\tPressure = "); Serial.println(p.z);
+    //Serial.print("X = "); Serial.print(p.x);
+    //Serial.print("\tY = "); Serial.print(p.y);
+    //Serial.print("\tPressure = "); Serial.println(p.z);
     // Scale from ~0->4000 to tft.width using the calibration #'s
     int x, y;
     x = map(p.y, calValues.tsMINY, calValues.tsMAXY, 0, tft.width());
     y = map(p.x, calValues.tsMINX, calValues.tsMAXX, tft.height(), 0);
 
-    Serial.print("("); Serial.print(x);
-    Serial.print(", "); Serial.print(y);
-    Serial.println(")");
+    //Serial.print("("); Serial.print(x);
+    //Serial.print(", "); Serial.print(y);
+    //Serial.println(")");
     while (ts.touched() || digitalRead(AuxButton) == LOW) {
         EventTimers.tick();
     }
@@ -1224,7 +1224,7 @@ void EnterFileName(MenuItem* menu)
                     tmp = "/";
                 // change folder, reload files
                 currentFolder = tmp;
-                Serial.println("previous" + tmp);
+                //Serial.println("previous" + tmp);
                 GetFileNamesFromSD(currentFolder);
                 EnterFileName(menu);
                 return;
@@ -1321,7 +1321,7 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
                     firstdigit = false;
                 }
                 result += String(ix);
-                Serial.println("result: " + result);
+                //Serial.println("result: " + result);
                 DisplayValueLine(text, result.toInt(), delchars);
                 delchars = 0;
                 break;
@@ -1359,7 +1359,7 @@ void setupSDcard() {
 // read the files from the card
 // look for start.lwc, and process it, but don't add it to the list
 bool GetFileNamesFromSD(String dir) {
-    Serial.println("getting files from: " + dir);
+    //Serial.println("getting files from: " + dir);
     String startfile;
     // Directory file.
     SdFile root;
@@ -1375,7 +1375,7 @@ bool GetFileNamesFromSD(String dir) {
     String CurrentFilename = "";
 
     if (!root.open(dir.c_str())) {
-        Serial.println("open failed: " + dir);
+        //Serial.println("open failed: " + dir);
         return false;
     }
     if (dir != "/") {
@@ -1799,7 +1799,7 @@ void BarberPole()
     blue = CRGB(r, g, b);
     //ShowProgressBar(0);
     for (int loop = 0; loop < (4 * BARBERCOUNT); ++loop) {
-        Serial.println("barber:" + String(loop));
+        //Serial.println("barber:" + String(loop));
         //ShowProgressBar(loop * 100 / 4 * BARBERCOUNT);
         if (CheckCancel())
             return;
