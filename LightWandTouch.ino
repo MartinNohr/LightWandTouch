@@ -515,8 +515,8 @@ void SendFile(String Filename) {
     dataFile.open(fn.c_str(), O_READ);
     // if the file is available send it to the LED's
     if (dataFile.available()) {
-        for (int cnt = bMirrorPlayImage ? 2 : 1; cnt; --cnt) {
-            ReadAndDisplayFile();
+        for (int cnt = 0; cnt < (bMirrorPlayImage ? 2 : 1); ++cnt) {
+            ReadAndDisplayFile(cnt == 0);
             bReverseImage = !bReverseImage; // note this will be restored by SettingsSaveRestore
             dataFile.rewind();
             if (CheckCancel())
@@ -535,10 +535,14 @@ void SendFile(String Filename) {
         //setupSDcard();
         return;
     }
+    ShowProgressBar(100);
     SettingsSaveRestore(false);
 }
 
-void ReadAndDisplayFile() {
+void ReadAndDisplayFile(bool doingFirstHalf) {
+    static int totalSeconds;
+    if (doingFirstHalf)
+        totalSeconds = -1;
 #define MYBMP_BF_TYPE           0x4D42
 #define MYBMP_BF_OFF_BITS       54
 #define MYBMP_BI_SIZE           40
@@ -601,7 +605,7 @@ void ReadAndDisplayFile() {
 
     long secondsLeft = 0, lastSeconds = 0;
     char num[50];
-    int lastpercent = -1, percent;
+    int percent;
     // note that y is 0 based and x is 0 based in the following code, the original code had y 1 based
     for (int y = bReverseImage ? 0 : imgHeight - 1; bReverseImage ? y < imgHeight : y >= 0; bReverseImage ? ++y : --y) {
         // approximate time left
@@ -609,6 +613,13 @@ void ReadAndDisplayFile() {
             secondsLeft = ((long)(imgHeight - y) * frameHold / 1000L) + 1;
         else
             secondsLeft = ((long)y * frameHold / 1000L) + 1;
+        if (bMirrorPlayImage) {
+            if (totalSeconds == -1)
+                totalSeconds = secondsLeft;
+            if (doingFirstHalf) {
+                secondsLeft += totalSeconds;
+            }
+        }
         if (secondsLeft != lastSeconds) {
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
             tft.setTextSize(2);
@@ -618,9 +629,14 @@ void ReadAndDisplayFile() {
             tft.print(num);
         }
         percent = map(bReverseImage ? y : imgHeight - y, 0, imgHeight, 0, 100);
-        if (lastpercent != percent && ((percent % 5) == 0) || percent > 90) {
+        if (bMirrorPlayImage) {
+            percent /= 2;
+            if (!doingFirstHalf) {
+                percent += 50;
+            }
+        }
+        if (((percent % 5) == 0) || percent > 90) {
             ShowProgressBar(percent);
-            lastpercent = percent;
             //tft.setCursor(0, 50);
             //sprintf(num, "%4d/%5d", y, imgHeight);
             //tft.print(num);
@@ -676,7 +692,6 @@ void ReadAndDisplayFile() {
             break;
     }
     // all done
-    ShowProgressBar(100);
     readByte(true);
 }
 
