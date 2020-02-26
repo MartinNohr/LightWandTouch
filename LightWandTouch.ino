@@ -397,11 +397,11 @@ void ProcessFileOrTest()
                 // fill the progress bar
                 ShowProgressBar(0);
                 if (repeatCount > 1) {
-                    tft.drawRoundRect(0, 95, 240, 24, 10, ILI9341_BLUE);
+                    tft.drawRoundRect(0, 95, tft.width() - 1, 24, 10, ILI9341_BLUE);
                     tft.setCursor(7, 100);
                     tft.setTextSize(2);
                     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                    tft.print("Repeats Remaining: " + String(counter - 1) + "   ");
+                    tft.print(" Repeats Remaining: " + String(counter - 1) + "  ");
                 }
                 if (bShowBuiltInTests) {
                     // run the test
