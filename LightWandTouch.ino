@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.7");
+    tft.println("       Version 1.8");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -401,7 +401,7 @@ void ProcessFileOrTest()
                     tft.setCursor(7, 100);
                     tft.setTextSize(2);
                     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                    tft.print("Repeats Left: " + String(counter) + "   ");
+                    tft.print("Repeats Remaining: " + String(counter - 1) + "   ");
                 }
                 if (bShowBuiltInTests) {
                     // run the test
