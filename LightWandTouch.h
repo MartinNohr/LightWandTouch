@@ -22,6 +22,13 @@ struct {
     uint16_t tsMAXY;
 } calValues;
 
+// white balance values, really only 8 bits, but menus need 16 for ints
+struct {
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+} whiteBalance = { 255,255,255 };
+
 // wand settings
 #define NEXT_FOLDER_CHAR '~'
 #define PREVIOUS_FOLDER_CHAR '^'
@@ -85,6 +92,7 @@ const saveValues saveValueList[] = {
     {&bReverseImage,sizeof(bReverseImage)},
     {&bMirrorPlayImage,sizeof(bMirrorPlayImage)},
     {&nChainRepeats,sizeof(nChainRepeats)},
+    {&whiteBalance,sizeof(whiteBalance)},
 };
 
 // The menu structures
@@ -126,6 +134,7 @@ void LoadAssociatedFile(MenuItem*);
 void WriteMessage(String, bool error = false, int wait = 2000);
 void SaveEepromSettings(MenuItem*);
 void LoadEepromSettings(MenuItem*);
+void ShowWhiteBalance(MenuItem*);
 
 void RunningDot();
 void TestCylon();
@@ -157,6 +166,10 @@ MenuItem RepeatMenu[] = {
 MenuItem WandColorMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
+    {eTextInt,ILI9341_BLACK,"White Balance R: %3d",GetIntegerValue,&whiteBalance.r,0,255},
+    {eTextInt,ILI9341_BLACK,"White Balance G: %3d",GetIntegerValue,&whiteBalance.g,0,255},
+    {eTextInt,ILI9341_BLACK,"White Balance B: %3d",GetIntegerValue,&whiteBalance.b,0,255},
+    {eText,   ILI9341_BLACK,"Show White Balance",ShowWhiteBalance,NULL},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -234,9 +247,9 @@ MenuItem StartFileMenu[] = {
 MenuItem MainMenu[] = {
     {eClear,    ILI9341_BLACK},
     {eText,     ILI9341_BLACK,"Choose File",EnterFileName},
+    {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eMenu,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
     {eMenu,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
     {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},

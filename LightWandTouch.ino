@@ -87,33 +87,33 @@ bool SecondsTimer(void*)
     return false;
 }
 
-void ShowWhiteBalance()
-{
-    //tft.fillRect(10, 10, 100, 200, ILI9341_GREEN);
-    //delay(2000);
-
-    // draw a gradient
-    int x, y;
-    uint16_t r, g, b, yr, yg, yb, buf[320];
-    tft.startWrite();
-    for (y = 0; y < tft.height(); ++y) {
-        for (x = 0; x < tft.width(); ++x) {
-            yr = map(y, 0, tft.height(), 255, 0);
-            yg = map(y, 0, tft.height(), 0, 255);
-            yb = map(y, 0, tft.height(), 255, 0);
-            r = map(x, 0, tft.width(), 0, 255);
-            g = map(x, 0, tft.width(), 0, 255);
-            b = map(x, 0, tft.width(), 255, 0);
-            buf[x] = tft.color565(max(r, yr), max(g, yg), max(b, yb));
-            //tft.writePixel(x, y, tft.color565(max(r, yr), max(g, yg), max(b, yb)));
-            //tft.writeFillRect(10, 10, 100, 200, ILI9341_RED);
-        }
-        tft.setAddrWindow(0, y, 320, y + 1);
-        //tft.setCursor(x, y);
-        tft.writePixels(buf, 320, false);
-    }
-    tft.endWrite();
-}
+//void ShowWhiteBalance()
+//{
+//    //tft.fillRect(10, 10, 100, 200, ILI9341_GREEN);
+//    //delay(2000);
+//
+//    // draw a gradient
+//    int x, y;
+//    uint16_t r, g, b, yr, yg, yb, buf[320];
+//    tft.startWrite();
+//    for (y = 0; y < tft.height(); ++y) {
+//        for (x = 0; x < tft.width(); ++x) {
+//            yr = map(y, 0, tft.height(), 255, 0);
+//            yg = map(y, 0, tft.height(), 0, 255);
+//            yb = map(y, 0, tft.height(), 255, 0);
+//            r = map(x, 0, tft.width(), 0, 255);
+//            g = map(x, 0, tft.width(), 0, 255);
+//            b = map(x, 0, tft.width(), 255, 0);
+//            buf[x] = tft.color565(max(r, yr), max(g, yg), max(b, yb));
+//            //tft.writePixel(x, y, tft.color565(max(r, yr), max(g, yg), max(b, yb)));
+//            //tft.writeFillRect(10, 10, 100, 200, ILI9341_RED);
+//        }
+//        tft.setAddrWindow(0, y, 320, y + 1);
+//        //tft.setCursor(x, y);
+//        tft.writePixels(buf, 320, false);
+//    }
+//    tft.endWrite();
+//}
 
 void setup(void) {
     tft.begin();
@@ -149,7 +149,7 @@ void setup(void) {
     digitalWrite(LED_BUILTIN, HIGH);
     EventTimers.every(1000 / TIMERSTEPS, BackLightControl);
     FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
-    //FastLED.setTemperature(CRGB(127, 127, 200));
+    FastLED.setTemperature(CRGB(whiteBalance.r, whiteBalance.g, whiteBalance.b));
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
     // Turn the LED on, then pause
     leds[0] = leds[1] = CRGB::Red;
@@ -453,7 +453,8 @@ void ProcessFileOrTest()
                 if (IsFolder(CurrentFileIndex))
                     break;
             }
-            FastLED.clear(true);
+            // clear, but don't show the led's between chains
+            FastLED.clear();
         }
         if (bCancelRun) {
             chainCount = 0;
@@ -809,6 +810,21 @@ void fixRGBwithGamma(byte* rp, byte* gp, byte* bp) {
     }
 }
 
+// show some LED's with and without white balance adjust
+void ShowWhiteBalance(MenuItem* menu)
+{
+    for (int ix = 0; ix < 10; ++ix) {
+        leds[ix] = CRGB(128, 128, 128);
+    }
+    FastLED.setTemperature(CRGB(128, 128, 128));
+    FastLED.show();
+    delay(2000);
+    FastLED.setTemperature(CRGB(whiteBalance.r, whiteBalance.g, whiteBalance.b));
+    FastLED.show();
+    delay(3000);
+    FastLED.clear(true);
+}
+
 // create the associated LWC name
 String MakeLWCFilename(String filename, bool addext)
 {
@@ -919,6 +935,13 @@ bool ProcessConfigFile(String filename)
                 else if (command == "CHAIN REPEATS") {
                     nChainRepeats = args.toInt();
                 }
+                else if (command == "WHITE BALANCE") {
+                    whiteBalance.r = args.toInt();
+                    args = args.substring(args.indexOf(',') + 1);
+                    whiteBalance.g = args.toInt();
+                    args = args.substring(args.indexOf(',') + 1);
+                    whiteBalance.b = args.toInt();
+                }
             }
         }
         rdfile.close();
@@ -973,6 +996,8 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
             line = "CHAIN FILES=" + String(bMirrorPlayImage ? "TRUE" : "FALSE");
             file.println(line);
             line = "CHAIN REPEATS=" + String(nChainRepeats);
+            file.println(line);
+            line = "WHITE BALANCE=" + String(whiteBalance.r) + "," + String(whiteBalance.g) + "," + String(whiteBalance.b);
             file.println(line);
             file.close();
             WriteMessage("Saved:\n" + filepath);
@@ -1181,6 +1206,7 @@ void ShowMenu(struct MenuItem* menu)
                 y += LINEHEIGHT;
                 tft.setTextColor(ILI9341_WHITE, menu->back_color);
                 tft.setCursor(x, y);
+                tft.print(menu->op == eExit ? "-" : "+");
                 tft.print(menu->text);
                 sepline = true;
                 break;
