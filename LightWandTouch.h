@@ -44,6 +44,7 @@ bool bAutoLoadSettings = false;           // set to automatically load saved set
 bool bScaleHeight = false;                // scale the Y values to fit the number of pixels
 bool bCancelRun = false;                  // set to cancel a running job
 bool bChainFiles = false;                 // set to run all the files from current to the last one in the current folder
+int nChainRepeats = 1;                  // how many times to repeat the chain
 SdFile dataFile;
 int nMaxBackLight = 75;                 // maximum backlight to use in %
 int nMinBackLight = 25;                 // dimmest setting
@@ -83,6 +84,7 @@ const saveValues saveValueList[] = {
     {&bShowImageDuringOutput,sizeof(bShowImageDuringOutput)},
     {&bReverseImage,sizeof(bReverseImage)},
     {&bMirrorPlayImage,sizeof(bMirrorPlayImage)},
+    {&nChainRepeats,sizeof(nChainRepeats)},
 };
 
 // The menu structures
@@ -142,11 +144,13 @@ int nBouncingBallsDecay = 1000;
 int nBouncingBallsRuntime = 20; // in seconds
 
 MenuItem RepeatMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
-    {eTextInt,ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
-    {eBool,   ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,    ILI9341_BLACK},
+    {eTextInt,  ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
+    {eTextInt,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
+    {eBool,     ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
+    {eSkipFalse,ILI9341_BLACK,"",NULL,&bChainFiles},
+    {eTextInt,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
+    {eExit,     ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };

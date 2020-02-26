@@ -29,7 +29,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 #define TFT_BRIGHT 3
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
-#define TIMERSTEPS 10
+#define TIMERSTEPS 20
 // this gets called every second/TIMERSTEPS
 bool BackLightControl(void*)
 {
@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.4");
+    tft.println("       Version 1.5");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -372,79 +372,98 @@ void ProcessFileOrTest()
         tft.print("                         ");
     }
     int chainCount = bChainFiles ? FileCountOnly() - CurrentFileIndex : 1;
+    int chainRepeatCount = bChainFiles ? nChainRepeats : 1;
     int lastFileIndex = CurrentFileIndex;
-    if (bShowBuiltInTests)
+    if (bShowBuiltInTests) {
         chainCount = 1;
+        chainRepeatCount = 1;
+    }
     FastLED.setBrightness(map(nStripBrightness, 0, 100, 0, 255));
-    while (chainCount-- > 0) {
-        DisplayCurrentFile(false);
-        if (bChainFiles && !bShowBuiltInTests) {
-            tft.setCursor(0, 60);
-            tft.print("Chained Files Left: " + String(chainCount) + "    ");
-        }
-        // process the repeats and waits for each file in the list
-        for (int counter = repeatCount; counter > 0; counter--) {
-            // fill the progress bar
-            ShowProgressBar(0);
-            if (repeatCount > 1) {
-                tft.drawRoundRect(0, 95, 240, 24, 10, ILI9341_BLUE);
-                tft.setCursor(7, 100);
-                tft.setTextSize(2);
-                tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                tft.print("Repeats Left: " + String(counter) + "   ");
-            }
-            if (bShowBuiltInTests) {
-                // run the test
-                (*BuiltInFiles[CurrentFileIndex].function)();
-            }
-            else {
-                // output the file
-                SendFile(FileNames[CurrentFileIndex]);
-            }
-            if (bCancelRun) {
-                break;
-            }
-            ShowProgressBar(0);
-            if (counter > 1) {
-                if (repeatDelay) {
-                    FastLED.clear(true);
-                    // start timer
-                    nTimerSeconds = repeatDelay;
-                    EventTimers.every(1000L, SecondsTimer);
-                    while (nTimerSeconds) {
-                        bTurnOnBacklight = true;
-                        tft.setCursor(0, 75);
-                        tft.setTextSize(2);
-                        tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                        tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
-                        tft.print("   ");
-                        delay(1000);
-                        EventTimers.tick();
-                        if (CheckCancel())
-                            break;
-                        delay(10);
-                    }
-                    tft.setCursor(0, 75);
-                    tft.print("                           ");
+    while (chainRepeatCount-- > 0) {
+        while (chainCount-- > 0) {
+            DisplayCurrentFile(false);
+            if (bChainFiles && !bShowBuiltInTests) {
+                tft.setCursor(0, 60);
+                tft.print("Files: " + String(chainCount) + "  ");
+                if (chainRepeatCount > 0) {
+                    tft.print("Repeats: " + String(chainRepeatCount) + "  ");
+                }
+                else {
+                    tft.print("            ");
                 }
             }
+            // process the repeats and waits for each file in the list
+            for (int counter = repeatCount; counter > 0; counter--) {
+                // fill the progress bar
+                ShowProgressBar(0);
+                if (repeatCount > 1) {
+                    tft.drawRoundRect(0, 95, 240, 24, 10, ILI9341_BLUE);
+                    tft.setCursor(7, 100);
+                    tft.setTextSize(2);
+                    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+                    tft.print("Repeats Left: " + String(counter) + "   ");
+                }
+                if (bShowBuiltInTests) {
+                    // run the test
+                    (*BuiltInFiles[CurrentFileIndex].function)();
+                }
+                else {
+                    // output the file
+                    SendFile(FileNames[CurrentFileIndex]);
+                }
+                if (bCancelRun) {
+                    break;
+                }
+                ShowProgressBar(0);
+                if (counter > 1) {
+                    if (repeatDelay) {
+                        FastLED.clear(true);
+                        // start timer
+                        nTimerSeconds = repeatDelay;
+                        EventTimers.every(1000L, SecondsTimer);
+                        while (nTimerSeconds) {
+                            bTurnOnBacklight = true;
+                            tft.setCursor(0, 75);
+                            tft.setTextSize(2);
+                            tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+                            tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
+                            tft.print("   ");
+                            delay(1000);
+                            EventTimers.tick();
+                            if (CheckCancel())
+                                break;
+                            delay(10);
+                        }
+                        tft.setCursor(0, 75);
+                        tft.print("                           ");
+                    }
+                }
+            }
+            if (bCancelRun) {
+                chainCount = 0;
+                break;
+            }
+            if (bShowBuiltInTests)
+                break;
+            // see if we are chaining, if so, get the next file, if a folder we're done
+            if (bChainFiles) {
+                // grab the next file
+                if (CurrentFileIndex < NumberOfFiles - 1)
+                    ++CurrentFileIndex;
+                if (IsFolder(CurrentFileIndex))
+                    break;
+            }
+            FastLED.clear(true);
         }
         if (bCancelRun) {
             chainCount = 0;
+            chainRepeatCount = 0;
             bCancelRun = false;
             break;
         }
-        if (bShowBuiltInTests)
-            break;
-        // see if we are chaining, if so, get the next file, if a folder we're done
-        if (bChainFiles) {
-            // grab the next file
-            if (CurrentFileIndex < NumberOfFiles - 1)
-                ++CurrentFileIndex;
-            if (IsFolder(CurrentFileIndex))
-                break;
-        }
-        FastLED.clear(true);
+        // start again
+        CurrentFileIndex = lastFileIndex;
+        chainCount = bChainFiles ? FileCountOnly() - CurrentFileIndex : 1;
     }
     if (bChainFiles)
         CurrentFileIndex = lastFileIndex;
