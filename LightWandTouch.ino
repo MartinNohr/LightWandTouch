@@ -402,7 +402,6 @@ void ProcessFileOrTest()
                 SendFile(FileNames[CurrentFileIndex]);
             }
             if (bCancelRun) {
-                bCancelRun = false;
                 break;
             }
             ShowProgressBar(0);
