@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.5");
+    tft.println("       Version 1.6");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -908,6 +908,17 @@ bool ProcessConfigFile(String filename)
                     args.toUpperCase();
                     bReverseImage = args[0] == 'T';
                 }
+                else if (command == "MIRROR PLAY IMAGE") {
+                    args.toUpperCase();
+                    bMirrorPlayImage = args[0] == 'T';
+                }
+                else if (command == "CHAIN FILES") {
+                    args.toUpperCase();
+                    bChainFiles = args[0] == 'T';
+                }
+                else if (command == "CHAIN REPEATS") {
+                    nChainRepeats = args.toInt();
+                }
             }
         }
         rdfile.close();
@@ -956,6 +967,12 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
             line = "START DELAY=" + String(startDelay);
             file.println(line);
             line = "REVERSE IMAGE=" + String(bReverseImage ? "TRUE" : "FALSE");
+            file.println(line);
+            line = "MIRROR PLAY IMAGE=" + String(bMirrorPlayImage ? "TRUE" : "FALSE");
+            file.println(line);
+            line = "CHAIN FILES=" + String(bMirrorPlayImage ? "TRUE" : "FALSE");
+            file.println(line);
+            line = "CHAIN REPEATS=" + String(nChainRepeats);
             file.println(line);
             file.close();
             WriteMessage("Saved:\n" + filepath);
