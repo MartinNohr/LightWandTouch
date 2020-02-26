@@ -154,13 +154,20 @@ MenuItem RepeatMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem WandMoreMenu[] = {
+MenuItem WandColorMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
+MenuItem WandMoreMenu[] = {
+    {eClear,  ILI9341_BLACK},
     {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
     {eBool,   ILI9341_BLACK,"Reverse Image: %s",ToggleBool,&bReverseImage,0,0,"Yes","No"},
     {eBool,   ILI9341_BLACK,"Play Mirror Image: %s",ToggleBool,&bMirrorPlayImage,0,0,"Yes","No"},
+    {eMenu,   ILI9341_BLACK,"Color Settings",NULL,WandColorMenu},
     {eExit,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}

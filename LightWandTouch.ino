@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.6");
+    tft.println("       Version 1.7");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -2008,4 +2008,6 @@ void DisplayCurrentFile(bool top)
     tft.fillScreen(ILI9341_BLACK);
     tft.setCursor(0, top ? 0 : 15);
     tft.print(currentFolder + FileNames[CurrentFileIndex]);
+    if (bMirrorPlayImage)
+        tft.print("><");
 }
