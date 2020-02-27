@@ -453,8 +453,8 @@ void ProcessFileOrTest()
                 if (IsFolder(CurrentFileIndex))
                     break;
             }
-            // clear, but don't show the led's between chains
-            FastLED.clear();
+            // clear
+            FastLED.clear(true);
         }
         if (bCancelRun) {
             chainCount = 0;
