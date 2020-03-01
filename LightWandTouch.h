@@ -66,6 +66,8 @@ bool bShowBuiltInTests = false;         // list the internal file instead of the
 bool bReverseImage = false;             // read the file lines in reverse
 bool bMirrorPlayImage = false;          // play the file twice, 2nd time reversed
 
+bool bLongPress = false;                // set when long press on screen
+
 struct saveValues {
     void* val;
     int size;

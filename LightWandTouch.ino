@@ -334,6 +334,10 @@ void loop()
                 if (menuLevel) {
                     --menuLevel;
                     bMenuChanged = true;
+                    if (bLongPress) {
+                        bLongPress = false;
+                        menuLevel = 0;
+                    }
                 }
             }
             break;
@@ -343,6 +347,10 @@ void loop()
     if (!bMenuChanged && menuLevel) {
         bMenuChanged = true;
         --menuLevel;
+        if (bLongPress) {
+            bLongPress = false;
+            menuLevel = 0;
+        }
     }
 }
 
@@ -1057,6 +1065,9 @@ TS_Point ReadTouch()
             }
         }
     }
+    // record the time
+    long pressedTime = millis();
+    bLongPress = false;
     bTurnOnBacklight = true;
     //Serial.print("X = "); Serial.print(p.x);
     //Serial.print("\tY = "); Serial.print(p.y);
@@ -1072,6 +1083,8 @@ TS_Point ReadTouch()
     while (ts.touched() || digitalRead(AuxButton) == LOW) {
         EventTimers.tick();
     }
+    if (pressedTime + 1000 < millis())
+        bLongPress = true;
     ts.getPoint();
     p.x = x;
     p.y = y;
