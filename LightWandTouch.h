@@ -151,6 +151,8 @@ void TestTwinkle();
 int nBouncingBallsCount = 4;
 int nBouncingBallsDecay = 1000;
 int nBouncingBallsRuntime = 20; // in seconds
+// cylon eye
+int nCylonEyeSize = 10;
 
 MenuItem RepeatMenu[] = {
     {eClear,    ILI9341_BLACK},
@@ -207,6 +209,22 @@ MenuItem BouncingBallsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+MenuItem CylonEyeMenu[] = {
+    {eClear,  ILI9341_BLACK},
+    {eText,   ILI9341_BLACK,"Cylon Eye"},
+    {eTextInt,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
+MenuItem InternalFileSettings[] = {
+    {eClear,  ILI9341_BLACK},
+    {eMenu,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
+    {eMenu,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
+    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem EepromMenu[] = {
     {eClear,  ILI9341_BLACK},
     {eBool,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
@@ -248,13 +266,16 @@ MenuItem StartFileMenu[] = {
 MenuItem MainMenu[] = {
     {eClear,    ILI9341_BLACK},
     {eText,     ILI9341_BLACK,"Choose File",EnterFileName},
-    {eBool,     ILI9341_BLACK,"Built-in Images (%s)",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
+    {eBool,     ILI9341_BLACK,"Show SD Card",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
+    {eBool,     ILI9341_BLACK,"Show Built-ins",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
     {eMenu,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
     {eMenu,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
     {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eMenu,     ILI9341_BLACK,"Internal File Settings",NULL,BouncingBallsMenu},
+    {eMenu,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
     {eMenu,     ILI9341_BLACK,"Other Settings",NULL,OtherSettingsMenu},
     // make sure this one is last
     {eTerminate}
@@ -276,7 +297,7 @@ BuiltInItem BuiltInFiles[] = {
     {"2 Running Dots",OppositeRunningDots},
     {"Barber Pole",BarberPole},
     {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
-    {"Cylon",TestCylon},
+    {"Cylon Eye",TestCylon},
     {"Meteor",TestMeteor},
     {"CheckerBoard",CheckerBoard},
     {"Random Bars",RandomBars},

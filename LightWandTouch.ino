@@ -1558,7 +1558,7 @@ int CompareStrings(String one, String two)
 
 void TestCylon()
 {
-    CylonBounce(255, 0, 0, 10, frameHold, 50);
+    CylonBounce(255, 0, 0, nCylonEyeSize, frameHold, 50);
 }
 void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
@@ -1574,7 +1574,6 @@ void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
         FastLED.show();
         delay(SpeedDelay);
     }
-
     delay(ReturnDelay);
 
     for (int i = stripLength - EyeSize - 2; i > 0; i--) {
@@ -1590,7 +1589,6 @@ void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
         delay(SpeedDelay);
     }
     delay(ReturnDelay);
-    FastLED.clear(true);
 }
 
 void TestMeteor() {
@@ -1942,7 +1940,7 @@ void BarberPole()
 
 void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne) {
     FastLED.clear();
-    byte brightness = (255 * nStripBrightness) / 100;
+    byte brightness = map(nStripBrightness, 0, 100, 0, 255);
 
     for (int i = 0; i < Count; i++) {
         if (CheckCancel())
@@ -1951,7 +1949,7 @@ void TwinkleRandom(int Count, int SpeedDelay, boolean OnlyOne) {
         FastLED.show();
         delay(SpeedDelay);
         if (OnlyOne) {
-            FastLED.clear();
+            FastLED.clear(true);
         }
     }
     delay(SpeedDelay);
