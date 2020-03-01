@@ -1110,6 +1110,8 @@ bool CheckCancel()
         tft.setTextSize(4);
         tft.println("Cancel?");
         tft.print("   Yes    No");
+        tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+        tft.setTextSize(2);
         bCancelPending = true;
         bReadyToCancel = false;
         // in case it was the aux button, wait for it to clear

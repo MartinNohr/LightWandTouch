@@ -156,6 +156,7 @@ MenuItem RepeatMenu[] = {
     {eClear,    ILI9341_BLACK},
     {eTextInt,  ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
     {eTextInt,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
+    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
     {eBool,     ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
     {eSkipFalse,ILI9341_BLACK,"",NULL,&bChainFiles},
     {eTextInt,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
