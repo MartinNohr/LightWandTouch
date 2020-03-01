@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(" Light Wand Touch");
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.8");
+    tft.println("       Version 1.9");
     tft.println("       Martin Nohr");
     setupSDcard();
     WriteMessage("Testing LED Strip", false, 10);
@@ -1112,13 +1112,28 @@ bool CheckCancel()
         tft.print("   Yes    No");
         bCancelPending = true;
         bReadyToCancel = false;
+        // in case it was the aux button, wait for it to clear
+        while (digitalRead(AuxButton) == LOW)
+            ;
         return false;
     }
     if (bReadyToCancel) {
         bCancelPending = false;
-        if (digitalRead(AuxButton) == LOW || (RangeTest(point.x, 105, 20) && RangeTest(point.y, 178, 20))) {
+        bool aux = false;
+        if (digitalRead(AuxButton) == LOW) {
+            // debounce it
+            delay(50);
+            if (digitalRead(AuxButton) == LOW) {
+                aux = true;
+            }
+        }
+        if (aux || (RangeTest(point.x, 105, 20) && RangeTest(point.y, 178, 20))) {
             bCancelRun = true;
             retflag = true;
+            // if this was the aux button, wait for release
+            while (digitalRead(AuxButton) == LOW)
+                ;
+            delay(50);
         }
         else {
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
