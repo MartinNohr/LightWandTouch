@@ -165,7 +165,9 @@ MenuItem RepeatMenu[] = {
     {eTextInt,false,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
     {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,false},
         {eBool,false,     ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
-        {eTextInt,false,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
+        {eIfEqual,false,ILI9341_BLACK,"",NULL,&bChainFiles,true},
+            {eTextInt,false,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
+        {eEndif},
     {eEndif},
     {eExit,false,     ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last

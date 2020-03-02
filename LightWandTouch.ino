@@ -1389,13 +1389,13 @@ bool ReadNumberPad(int* pval, int min, int max, char* text)
     DisplayValueLine(text, result.toInt(), 0);
     tft.setTextSize(5);
     tft.setCursor(0, 30);
-    tft.println("7 8 9");
-    tft.println("4 5 6");
-    tft.println("1 2 3");
-    tft.println("  0 <");
+    tft.println(F("7 8 9"));
+    tft.println(F("4 5 6"));
+    tft.println(F("1 2 3"));
+    tft.println(F("  0 <"));
     tft.setTextSize(4);
     tft.setCursor(5, 200);
-    tft.print("OK CANCEL");
+    tft.print(F("OK CANCEL"));
     TS_Point p;
     int delchars = 0;   // to wipe out digits when the number is shorter on the line
     while (!done) {
