@@ -1152,8 +1152,6 @@ void ShowMenu(struct MenuItem* menu)
     // loop through the menu
     for (; menu->op != eTerminate; ++menu) {
         menu->valid = false;
-        Serial.println("skip:" + String(skip));
-        Serial.println("menu:" + String(menu->text));
         switch (menu->op) {
         case eIfEqual:
             // skip the next one if match, only booleans are handled so far
