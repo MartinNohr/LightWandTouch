@@ -106,18 +106,21 @@ enum eDisplayOperation {
     eBool,              // handle bool using %s and on/off values
     eMenu,              // load another menu
     eExit,              // closes this menu
-    eSkipTrue,          // skip the next menu item if boolean is true
-    eSkipFalse,         // skip the next menu item if boolean is false
+    eIfEqual,           // start skipping menu entries if match with data value
+    eElse,              // toggles the skipping
+    eEndif,             // ends an if block
     eTerminate,         // must be last in a menu
 };
 struct MenuItem {
     enum eDisplayOperation op;
+    bool valid;     // set to true if displayed for use
     int back_color;
     char* text;
     void(*function)(MenuItem*);
     void* value;
-    int min, max;
-    char* on;   // for boolean
+    long min;       // also used for ifequal
+    long max;       // size to compare for if
+    char* on;       // text for boolean
     char* off;
 };
 typedef MenuItem MenuItem;
@@ -157,128 +160,130 @@ int nBouncingBallsRuntime = 20; // in seconds
 int nCylonEyeSize = 10;
 
 MenuItem RepeatMenu[] = {
-    {eClear,    ILI9341_BLACK},
-    {eTextInt,  ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
-    {eTextInt,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
-    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eBool,     ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
-    {eSkipFalse,ILI9341_BLACK,"",NULL,&bChainFiles},
-    {eTextInt,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
-    {eExit,     ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,    ILI9341_BLACK},
+    {eTextInt,false,  ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
+    {eTextInt,false,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
+    {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,false},
+        {eBool,false,     ILI9341_BLACK,"Chain Files: %s",ToggleBool,&bChainFiles,0,0,"On","Off"},
+        {eTextInt,false,  ILI9341_BLACK,"Chain Repeats: %d",GetIntegerValue,&nChainRepeats,1,1000},
+    {eEndif},
+    {eExit,false,     ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem WandColorMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eBool,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
-    {eTextInt,ILI9341_BLACK,"White Balance R: %3d",GetIntegerValue,&whiteBalance.r,0,255},
-    {eTextInt,ILI9341_BLACK,"White Balance G: %3d",GetIntegerValue,&whiteBalance.g,0,255},
-    {eTextInt,ILI9341_BLACK,"White Balance B: %3d",GetIntegerValue,&whiteBalance.b,0,255},
-    {eText,   ILI9341_BLACK,"Show White Balance",ShowWhiteBalance,NULL},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eBool,false,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
+    {eTextInt,false,ILI9341_BLACK,"White Balance R: %3d",GetIntegerValue,&whiteBalance.r,0,255},
+    {eTextInt,false,ILI9341_BLACK,"White Balance G: %3d",GetIntegerValue,&whiteBalance.g,0,255},
+    {eTextInt,false,ILI9341_BLACK,"White Balance B: %3d",GetIntegerValue,&whiteBalance.b,0,255},
+    {eText,false,   ILI9341_BLACK,"Show White Balance",ShowWhiteBalance,NULL},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem WandMoreMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
-    {eBool,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
-    {eBool,   ILI9341_BLACK,"Reverse Image: %s",ToggleBool,&bReverseImage,0,0,"Yes","No"},
-    {eBool,   ILI9341_BLACK,"Play Mirror Image: %s",ToggleBool,&bMirrorPlayImage,0,0,"Yes","No"},
-    {eMenu,   ILI9341_BLACK,"Color Settings",NULL,WandColorMenu},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
+    {eBool,false,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
+    {eBool,false,   ILI9341_BLACK,"Reverse Image: %s",ToggleBool,&bReverseImage,0,0,"Yes","No"},
+    {eBool,false,   ILI9341_BLACK,"Play Mirror Image: %s",ToggleBool,&bMirrorPlayImage,0,0,"Yes","No"},
+    {eMenu,false,   ILI9341_BLACK,"Color Settings",NULL,WandColorMenu},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem WandMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
-    {eTextInt,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
-    {eTextInt,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
-    {eBool,   ILI9341_BLACK,"Display Output: %s",ToggleBool,&bShowImageDuringOutput,0,0,"Yes","No"},
-    {eMenu,   ILI9341_BLACK,"More Settings",NULL,WandMoreMenu},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
+    {eTextInt,false,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
+    {eTextInt,false,ILI9341_BLACK,"Wand Brightness: %d%%",GetIntegerValue,&nStripBrightness,1,100},
+    {eBool,false,   ILI9341_BLACK,"Display Output: %s",ToggleBool,&bShowImageDuringOutput,0,0,"Yes","No"},
+    {eMenu,false,   ILI9341_BLACK,"More Settings",NULL,WandMoreMenu},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem BouncingBallsMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Bouncing Balls"},
-    {eTextInt,ILI9341_BLACK,"Ball Count (1-8): %d",GetIntegerValue,&nBouncingBallsCount,1,8},
-    {eTextInt,ILI9341_BLACK,"Decay (500-10000): %d",GetIntegerValue,&nBouncingBallsDecay,500,10000},
-    {eTextInt,ILI9341_BLACK,"Runtime (seconds): %d",GetIntegerValue,&nBouncingBallsRuntime,1,10000},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eText,false,   ILI9341_BLACK,"Bouncing Balls"},
+    {eTextInt,false,ILI9341_BLACK,"Ball Count (1-8): %d",GetIntegerValue,&nBouncingBallsCount,1,8},
+    {eTextInt,false,ILI9341_BLACK,"Decay (500-10000): %d",GetIntegerValue,&nBouncingBallsDecay,500,10000},
+    {eTextInt,false,ILI9341_BLACK,"Runtime (seconds): %d",GetIntegerValue,&nBouncingBallsRuntime,1,10000},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem CylonEyeMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Cylon Eye"},
-    {eTextInt,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eText,false,   ILI9341_BLACK,"Cylon Eye"},
+    {eTextInt,false,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem InternalFileSettings[] = {
-    {eClear,  ILI9341_BLACK},
-    {eMenu,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
-    {eMenu,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eMenu,false,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
+    {eMenu,false,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem EepromMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eBool,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
-    {eText,   ILI9341_BLACK,"Save Default Settings",SaveEepromSettings},
-    {eText,   ILI9341_BLACK,"Load Default Settings",LoadEepromSettings},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eBool,false,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
+    {eText,false,   ILI9341_BLACK,"Save Default Settings",SaveEepromSettings},
+    {eText,false,   ILI9341_BLACK,"Load Default Settings",LoadEepromSettings},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem OtherSettingsMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextInt,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
-    {eTextInt,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
-    {eTextInt,ILI9341_BLACK,"Backlight Timeout: %d (S)",GetIntegerValue,&nBackLightSeconds,1,1000},
-    {eMenu,   ILI9341_BLACK,"Default Settings",NULL,EepromMenu},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
+    {eTextInt,false,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
+    {eTextInt,false,ILI9341_BLACK,"Backlight Timeout: %d (S)",GetIntegerValue,&nBackLightSeconds,1,1000},
+    {eMenu,false,   ILI9341_BLACK,"Default Settings",NULL,EepromMenu},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem AssociatedFileMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eTextCurrentFile,   ILI9341_BLACK,"Erase %s.LWC",EraseAssociatedFile},
-    {eTextCurrentFile,   ILI9341_BLACK,"Save  %s.LWC",SaveAssociatedFile},
-    {eTextCurrentFile,   ILI9341_BLACK,"Load  %s.LWC",LoadAssociatedFile},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eTextCurrentFile,false,   ILI9341_BLACK,"Erase %s.LWC",EraseAssociatedFile},
+    {eTextCurrentFile,false,   ILI9341_BLACK,"Save  %s.LWC",SaveAssociatedFile},
+    {eTextCurrentFile,false,   ILI9341_BLACK,"Load  %s.LWC",LoadAssociatedFile},
+    {eExit,false,              ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem StartFileMenu[] = {
-    {eClear,  ILI9341_BLACK},
-    {eText,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
-    {eText,   ILI9341_BLACK,"Save  START.LWC",SaveStartFile},
-    {eText,   ILI9341_BLACK,"Load  START.LWC",LoadStartFile},
-    {eMenu,   ILI9341_BLACK,"Associated Files",NULL,AssociatedFileMenu},
-    {eExit,   ILI9341_BLACK,"Previous Menu"},
+    {eClear,false,  ILI9341_BLACK},
+    {eText,false,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
+    {eText,false,   ILI9341_BLACK,"Save  START.LWC",SaveStartFile},
+    {eText,false,   ILI9341_BLACK,"Load  START.LWC",LoadStartFile},
+    {eMenu,false,   ILI9341_BLACK,"Associated Files",NULL,AssociatedFileMenu},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
 };
 MenuItem MainMenu[] = {
-    {eClear,    ILI9341_BLACK},
-    {eText,     ILI9341_BLACK,"Choose File",EnterFileName},
-    {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eBool,     ILI9341_BLACK,"Show SD Card",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eBool,     ILI9341_BLACK,"Show Built-ins",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
-    {eMenu,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
-    {eMenu,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
-    {eSkipTrue, ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eMenu,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
-    {eSkipFalse,ILI9341_BLACK,"",NULL,&bShowBuiltInTests},
-    {eMenu,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
-    {eMenu,     ILI9341_BLACK,"Other Settings",NULL,OtherSettingsMenu},
+    {eClear,false,    ILI9341_BLACK},
+    {eText,false,     ILI9341_BLACK,"Choose File",EnterFileName},
+    {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,true},
+        {eBool,false,     ILI9341_BLACK,"Show SD Card",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eElse},
+        {eBool,false,     ILI9341_BLACK,"Show Built-ins",ToggleFilesBuiltin,&bShowBuiltInTests,0,0,"On","Off"},
+    {eEndif},
+    {eMenu,false,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
+    {eMenu,false,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
+    {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,true},
+        {eMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
+    {eElse},
+        {eMenu,false,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
+    {eEndif},
+    {eMenu,false,     ILI9341_BLACK,"Other Settings",NULL,OtherSettingsMenu},
     // make sure this one is last
     {eTerminate}
 };

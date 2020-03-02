@@ -123,7 +123,7 @@ void setup(void) {
     tft.fillScreen(ILI9341_BLACK);
     tft.setRotation(1);
     if (!ts.begin()) {
-        WriteMessage("Failed starting touch screen", true);
+        WriteMessage(F("Failed starting touch screen"), true);
         //Serial.println("Couldn't start touchscreen controller");
         while (1);
     }
@@ -136,13 +136,13 @@ void setup(void) {
     tft.setTextColor(ILI9341_BLUE);
     tft.setTextSize(3);
     tft.println("\n\n");
-    tft.println(" Light Wand Touch");
+    tft.println(F(" Light Wand Touch"));
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println("       Version 1.9");
-    tft.println("       Martin Nohr");
+    tft.println(F("       Version 1.9"));
+    tft.println(F("       Martin Nohr"));
     setupSDcard();
-    WriteMessage("Testing LED Strip", false, 10);
+    WriteMessage(F("Testing LED Strip"), false, 10);
     // control brightness of screen
     pinMode(TFT_BRIGHT, OUTPUT);
     analogWrite(TFT_BRIGHT, 255);
@@ -281,36 +281,16 @@ void loop()
         return;
     }
     // see if we got a menu match
-    bool skip = false;
-    bool skipmatch = false;
     bool gotmatch = false;
-    int skipper = 0;    // increment each time we have to skip one so we get the right height
+    int menuix = 0;
     for (int ix = 0; !gotmatch && menustack[menuLevel][ix].op != eTerminate; ++ix) {
-        // see if this is one to skip
-        if (menustack[menuLevel][ix].op == eSkipFalse) {
-            skipmatch = !*(bool*)menustack[menuLevel][ix].value;
-            skip = true;
-        }
-        else if (menustack[menuLevel][ix].op == eSkipTrue) {
-            skipmatch = *(bool*)menustack[menuLevel][ix].value;
-            skip = true;
-        }
-        else if (menustack[menuLevel][ix].op == eClear) {
-            skip = true;
-        }
-        // look for a match
-        if (skip) {
-            skip = false;
-            ++skipper;
+        // see if this is one is valid
+        if (!menustack[menuLevel][ix].valid) {
             continue;
         }
-        if (skipmatch) {
-            skipmatch = false;
-            ++skipper;
-            continue;
-        }
+        ++menuix;
         //Serial.println("rangetest: ix=" + String(ix) + " skipper=" + String(skipper));
-        if (RangeTest(p.y, (ix + 1 - skipper) * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
+        if (RangeTest(p.y, menuix * LINEHEIGHT, LINEHEIGHT / 2) && RangeTest(p.x, 0, tft.width() - 50)) {
             gotmatch = true;
             //Serial.println("clicked on menu");
             // got one, service it
@@ -369,8 +349,8 @@ void ProcessFileOrTest()
             tft.setCursor(0, 75);
             tft.setTextSize(2);
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-            tft.print("Seconds before start: " + String(nTimerSeconds));
-            tft.print("   ");
+            tft.print(String(F("Seconds before start: ")) + String(nTimerSeconds));
+            tft.print(F("   "));
             EventTimers.tick();
             if (CheckCancel())
                 break;
@@ -392,12 +372,12 @@ void ProcessFileOrTest()
             DisplayCurrentFile(false);
             if (bChainFiles && !bShowBuiltInTests) {
                 tft.setCursor(0, 60);
-                tft.print("Files: " + String(chainCount) + "  ");
+                tft.print(String(F("Files: ")) + String(chainCount) + F("  "));
                 if (chainRepeatCount > 0) {
-                    tft.print("Repeats: " + String(chainRepeatCount) + "  ");
+                    tft.print(String(F("Repeats: ")) + String(chainRepeatCount) + F("  "));
                 }
                 else {
-                    tft.print("            ");
+                    tft.print(F("            "));
                 }
             }
             // process the repeats and waits for each file in the list
@@ -409,7 +389,7 @@ void ProcessFileOrTest()
                     tft.setCursor(7, 100);
                     tft.setTextSize(2);
                     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                    tft.print(" Repeats Remaining: " + String(counter - 1) + "  ");
+                    tft.print(String(F(" Repeats Remaining: ")) + String(counter - 1) + String(F("  ")));
                 }
                 if (bShowBuiltInTests) {
                     // run the test
@@ -434,8 +414,8 @@ void ProcessFileOrTest()
                             tft.setCursor(0, 75);
                             tft.setTextSize(2);
                             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
-                            tft.print("Repeat Seconds Left: " + String(nTimerSeconds));
-                            tft.print("   ");
+                            tft.print(String(F("Repeat Seconds Left: ")) + String(nTimerSeconds));
+                            tft.print(F("   "));
                             delay(1000);
                             EventTimers.tick();
                             if (CheckCancel())
@@ -587,7 +567,7 @@ void ReadAndDisplayFile(bool doingFirstHalf) {
 
     /* Check file header */
     if (bmpType != MYBMP_BF_TYPE || bmpOffBits != MYBMP_BF_OFF_BITS) {
-        WriteMessage("Invalid BMP:\n" + currentFolder + FileNames[CurrentFileIndex], true);
+        WriteMessage(String(F("Invalid BMP:\n")) + currentFolder + FileNames[CurrentFileIndex], true);
         return;
     }
 
@@ -610,7 +590,7 @@ void ReadAndDisplayFile(bool doingFirstHalf) {
         imgBitCount != 24 || imgCompression != MYBMP_BI_RGB ||
         imgSizeImage == 0)
     {
-        WriteMessage("Unsupported, must be 24bpp:\n" + currentFolder + FileNames[CurrentFileIndex], true);
+        WriteMessage(String(F("Unsupported, must be 24bpp:\n")) + currentFolder + FileNames[CurrentFileIndex], true);
         return;
     }
 
@@ -839,7 +819,7 @@ String MakeLWCFilename(String filename, bool addext)
     String cfFile = filename;
     cfFile = cfFile.substring(0, cfFile.lastIndexOf('.'));
     if(addext)
-        cfFile += ".LWC";
+        cfFile += String(F(".LWC"));
     return cfFile;
 }
 
@@ -868,18 +848,18 @@ void LoadAssociatedFile(MenuItem* menu)
     String name = FileNames[CurrentFileIndex];
     name = MakeLWCFilename(name, true);
     if (ProcessConfigFile(name)) {
-        WriteMessage("Processed:\n" + name);
+        WriteMessage(String(F("Processed:\n")) + name);
     }
     else {
-        WriteMessage("Failed reading:\n" + name, true);
+        WriteMessage(String(F("Failed reading:\n")) + name, true);
     }
 }
 
 void LoadStartFile(MenuItem* menu)
 {
-    String name = "START.LWC";
+    String name = F("START.LWC");
     if (ProcessConfigFile(name)) {
-        WriteMessage("Processed:\n" + name);
+        WriteMessage(String(F("Processed:\n")) + name);
     }
     else {
         WriteMessage("Failed reading:\n" + name, true);
@@ -905,45 +885,45 @@ bool ProcessConfigFile(String filename)
                 command.trim();
                 command.toUpperCase();
                 args = line.substring(ix + 1);
-                if (!command.compareTo("PIXELS")) {
+                if (!command.compareTo(F("PIXELS"))) {
                     stripLength = args.toInt();
                     FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, stripLength);
                 }
-                else if (command == "BRIGHTNESS") {
+                else if (command == F("BRIGHTNESS")) {
                     nStripBrightness = args.toInt();
                     if (nStripBrightness < 1)
                         nStripBrightness = 1;
                     else if (nStripBrightness > 100)
                         nStripBrightness = 100;
                 }
-                else if (command == "REPEAT COUNT") {
+                else if (command == F("REPEAT COUNT")) {
                     repeatCount = args.toInt();
                 }
-                else if (command == "REPEAT DELAY") {
+                else if (command == F("REPEAT DELAY")) {
                     repeatDelay = args.toInt();
                 }
-                else if (command == "FRAME TIME") {
+                else if (command == F("FRAME TIME")) {
                     frameHold = args.toInt();
                 }
-                else if (command == "START DELAY") {
+                else if (command == F("START DELAY")) {
                     startDelay = args.toInt();
                 }
-                else if (command == "REVERSE IMAGE") {
+                else if (command == F("REVERSE IMAGE")) {
                     args.toUpperCase();
                     bReverseImage = args[0] == 'T';
                 }
-                else if (command == "MIRROR PLAY IMAGE") {
+                else if (command == F("MIRROR PLAY IMAGE")) {
                     args.toUpperCase();
                     bMirrorPlayImage = args[0] == 'T';
                 }
-                else if (command == "CHAIN FILES") {
+                else if (command == F("CHAIN FILES")) {
                     args.toUpperCase();
                     bChainFiles = args[0] == 'T';
                 }
-                else if (command == "CHAIN REPEATS") {
+                else if (command == F("CHAIN REPEATS")) {
                     nChainRepeats = args.toInt();
                 }
-                else if (command == "WHITE BALANCE") {
+                else if (command == F("WHITE BALANCE")) {
                     whiteBalance.r = args.toInt();
                     args = args.substring(args.indexOf(',') + 1);
                     whiteBalance.g = args.toInt();
@@ -966,53 +946,53 @@ bool WriteOrDeleteConfigFile(String filename, bool remove, bool startfile)
     bool retval = true;
     String filepath;
     if (startfile) {
-        filepath = currentFolder + "START.LWC";
+        filepath = currentFolder + String(F("START.LWC"));
     }
     else {
         filepath = currentFolder + MakeLWCFilename(filename, true);
     }
     if (remove) {
         if (!SD.exists(filepath.c_str()))
-            WriteMessage("Not Found:\n" + filepath);
+            WriteMessage(String(F("Not Found:\n")) + filepath);
         else if (SD.remove(filepath.c_str())) {
-            WriteMessage("Erased:\n" + filepath);
+            WriteMessage(String(F("Erased:\n")) + filepath);
         }
         else {
-            WriteMessage("Failed to erase:\n" + filepath, true);
+            WriteMessage(String(F("Failed to erase:\n")) + filepath, true);
         }
     }
     else {
         SdFile file;
         String line;
         if (file.open(filepath.c_str(), O_WRITE | O_CREAT | O_TRUNC)) {
-            line = "PIXELS=" + String(stripLength);
+            line = String(F("PIXELS=")) + String(stripLength);
             file.println(line);
-            line = "BRIGHTNESS=" + String(nStripBrightness);
+            line = String(F("BRIGHTNESS=")) + String(nStripBrightness);
             file.println(line);
-            line = "REPEAT COUNT=" + String(repeatCount);
+            line = String(F("REPEAT COUNT=")) + String(repeatCount);
             file.println(line);
-            line = "REPEAT DELAY=" + String(repeatDelay);
+            line = String(F("REPEAT DELAY=")) + String(repeatDelay);
             file.println(line);
-            line = "FRAME TIME=" + String(frameHold);
+            line = String(F("FRAME TIME=")) + String(frameHold);
             file.println(line);
-            line = "START DELAY=" + String(startDelay);
+            line = String(F("START DELAY=")) + String(startDelay);
             file.println(line);
-            line = "REVERSE IMAGE=" + String(bReverseImage ? "TRUE" : "FALSE");
+            line = String(F("REVERSE IMAGE=")) + String(bReverseImage ? F("TRUE") : F("FALSE"));
             file.println(line);
-            line = "MIRROR PLAY IMAGE=" + String(bMirrorPlayImage ? "TRUE" : "FALSE");
+            line = String(F("MIRROR PLAY IMAGE=")) + String(bMirrorPlayImage ? F("TRUE") : F("FALSE"));
             file.println(line);
-            line = "CHAIN FILES=" + String(bMirrorPlayImage ? "TRUE" : "FALSE");
+            line = String(F("CHAIN FILES=")) + String(bMirrorPlayImage ? F("TRUE") : F("FALSE"));
             file.println(line);
-            line = "CHAIN REPEATS=" + String(nChainRepeats);
+            line = String(F("CHAIN REPEATS=")) + String(nChainRepeats);
             file.println(line);
-            line = "WHITE BALANCE=" + String(whiteBalance.r) + "," + String(whiteBalance.g) + "," + String(whiteBalance.b);
+            line = String(F("WHITE BALANCE=")) + String(whiteBalance.r) + "," + String(whiteBalance.g) + "," + String(whiteBalance.b);
             file.println(line);
             file.close();
-            WriteMessage("Saved:\n" + filepath);
+            WriteMessage(String(F("Saved:\n")) + filepath);
         }
         else {
             retval = false;
-            WriteMessage("Failed to write:\n" + filepath, true);
+            WriteMessage(String(F("Failed to write:\n")) + filepath, true);
         }
     }
     return retval;
@@ -1169,82 +1149,83 @@ void ShowMenu(struct MenuItem* menu)
     char line[100];
     tft.setTextSize(2);
     bool skip = false;
-    bool sepline = false;
     // loop through the menu
-    while (menu->op != eTerminate) {
-        sepline = false;
-        if (skip) {
+    for (; menu->op != eTerminate; ++menu) {
+        menu->valid = false;
+        Serial.println("skip:" + String(skip));
+        Serial.println("menu:" + String(menu->text));
+        switch (menu->op) {
+        case eIfEqual:
+            // skip the next one if match, only booleans are handled so far
+            skip = *(bool*)menu->value != (menu->min ? true : false);
+            break;
+        case eElse:
+            skip = !skip;
+            break;
+        case eEndif:
             skip = false;
+            break;
+        case eClear:
+            tft.fillScreen(menu->back_color);
+            break;
         }
-        else
-        {
-            switch (menu->op) {
-            case eSkipTrue:
-                // skip the next one if true
-                if (*(bool*)menu->value)
-                    skip = true;
-                break;
-            case eSkipFalse:
-                // skip the next one if false
-                if (!*(bool*)menu->value)
-                    skip = true;
-                break;
-            case eClear:
-                tft.fillScreen(menu->back_color);
-                break;
-            case eTextInt:
-            case eText:
-            case eTextCurrentFile:
-                // increment displayable lines
-                y += LINEHEIGHT;
-                tft.setTextColor(ILI9341_WHITE, menu->back_color);
-                tft.setCursor(x, y);
-                if (menu->value) {
-                    if (menu->op == eText)
-                        sprintf(line, menu->text, (char*)menu->value);
-                    else if (menu->op == eTextInt)
-                        sprintf(line, menu->text, *(int*)menu->value);
-                    tft.print(line);
-                }
-                else {
-                    if (menu->op == eTextCurrentFile) {
-                        sprintf(line, menu->text, MakeLWCFilename(FileNames[CurrentFileIndex], false).c_str());
-                        tft.print(line);
-                    }
-                    else
-                        tft.print(menu->text);
-                }
-                sepline = true;
-                break;
-            case eBool:
-                // increment displayable lines
-                y += LINEHEIGHT;
-                tft.setTextColor(ILI9341_WHITE, menu->back_color);
-                tft.setCursor(x, y);
-                if (menu->value) {
-                    char line[100];
-                    sprintf(line, menu->text, *(bool*)menu->value ? menu->on : menu->off);
-                    tft.print(line);
-                }
-                else {
-                    tft.print(menu->text);
-                }
-                sepline = true;
-                break;
-            case eMenu:
-            case eExit:
-                y += LINEHEIGHT;
-                tft.setTextColor(ILI9341_WHITE, menu->back_color);
-                tft.setCursor(x, y);
-                tft.print(menu->op == eExit ? "-" : "+");
-                tft.print(menu->text);
-                sepline = true;
-                break;
+        if (skip) {
+            menu->valid = false;
+            continue;
+        }
+        // only displayable menu items should be in this switch
+        switch (menu->op) {
+        case eTextInt:
+        case eText:
+        case eTextCurrentFile:
+            menu->valid = true;
+            // increment displayable lines
+            y += LINEHEIGHT;
+            tft.setTextColor(ILI9341_WHITE, menu->back_color);
+            tft.setCursor(x, y);
+            if (menu->value) {
+                if (menu->op == eText)
+                    sprintf(line, menu->text, (char*)menu->value);
+                else if (menu->op == eTextInt)
+                    sprintf(line, menu->text, *(int*)menu->value);
+                tft.print(line);
             }
+            else {
+                if (menu->op == eTextCurrentFile) {
+                    sprintf(line, menu->text, MakeLWCFilename(FileNames[CurrentFileIndex], false).c_str());
+                    tft.print(line);
+                }
+                else
+                    tft.print(menu->text);
+            }
+            break;
+        case eBool:
+            menu->valid = true;
+            // increment displayable lines
+            y += LINEHEIGHT;
+            tft.setTextColor(ILI9341_WHITE, menu->back_color);
+            tft.setCursor(x, y);
+            if (menu->value) {
+                char line[100];
+                sprintf(line, menu->text, *(bool*)menu->value ? menu->on : menu->off);
+                tft.print(line);
+            }
+            else {
+                tft.print(menu->text);
+            }
+            break;
+        case eMenu:
+        case eExit:
+            menu->valid = true;
+            y += LINEHEIGHT;
+            tft.setTextColor(ILI9341_WHITE, menu->back_color);
+            tft.setCursor(x, y);
+            tft.print(menu->op == eExit ? "-" : "+");
+            tft.print(menu->text);
+            break;
         }
-        if (sepline)
+        if (!skip)
             tft.drawLine(0, y + 23, tft.width() - 58, y + 23, ILI9341_BLUE);
-        ++menu;
     }
 }
 
