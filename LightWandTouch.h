@@ -33,6 +33,12 @@ struct {
 #define NEXT_FOLDER_CHAR '~'
 #define PREVIOUS_FOLDER_CHAR '^'
 String currentFolder = "/";
+int CurrentFileIndex = 0;
+int lastFileIndex = 0;                  // save between switching of internal and SD
+String lastFolder = "/";
+int NumberOfFiles = 0;
+#define MAX_FILES 25
+String FileNames[MAX_FILES];
 SdFat SD;
 char signature[]{ "MLW00" };              // set to make sure saved values are valid, change when savevalues is changed
 int stripLength = 144;                    // Set the number of LEDs the LED Strip
@@ -58,11 +64,6 @@ int nMinBackLight = 25;                 // dimmest setting
 int nBackLightSeconds = 10;             // how long to leave the backlight on before dimming
 volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
 volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
-int CurrentFileIndex = 0;
-int lastFileIndex = 0;                  // save between switching of internal and SD
-int NumberOfFiles = 0;
-#define MAX_FILES 25
-String FileNames[MAX_FILES];
 bool bShowBuiltInTests = false;         // list the internal file instead of the SD card
 bool bReverseImage = false;             // read the file lines in reverse
 bool bMirrorPlayImage = false;          // play the file twice, 2nd time reversed

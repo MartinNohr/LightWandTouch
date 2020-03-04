@@ -1232,6 +1232,7 @@ void ToggleFilesBuiltin(MenuItem* menu)
 {
     int oldIndex = CurrentFileIndex;
     bool lastval = bShowBuiltInTests;
+    String oldFolder = currentFolder;
     ToggleBool(menu);
     if (lastval != bShowBuiltInTests) {
         if (bShowBuiltInTests) {
@@ -1252,6 +1253,8 @@ void ToggleFilesBuiltin(MenuItem* menu)
     // restore indexes
     CurrentFileIndex = lastFileIndex;
     lastFileIndex = oldIndex;
+    currentFolder = lastFolder;
+    lastFolder = oldFolder;
 }
 
 // toggle a boolean value
@@ -1304,10 +1307,10 @@ void EnterFileName(MenuItem* menu)
             EventTimers.tick();
         }
         p = ReadTouch();
-        if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, 25, 20)) {
+        if (RangeTest(p.x, tft.width() - 10, 25) && RangeTest(p.y, 25, 25)) {
             startindex -= 5;
         }
-        else if (RangeTest(p.x, tft.width() - 40, 25) && RangeTest(p.y, tft.height() - 20, 20)) {
+        else if (RangeTest(p.x, tft.width() - 10, 25) && RangeTest(p.y, tft.height() - 25, 25)) {
             startindex += 5;
         }
         // see if a file
