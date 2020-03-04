@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(F(" Light Wand Touch"));
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println(F("       Version 1.9"));
+    tft.println(F("       Version 2.0"));
     tft.println(F("       Martin Nohr"));
     setupSDcard();
     WriteMessage(F("Testing LED Strip"), false, 10);
@@ -351,7 +351,6 @@ void ProcessFileOrTest()
             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
             tft.print(String(F("Seconds before start: ")) + String(nTimerSeconds));
             tft.print(F("   "));
-            EventTimers.tick();
             if (CheckCancel())
                 break;
             delay(10);
@@ -383,7 +382,8 @@ void ProcessFileOrTest()
             // process the repeats and waits for each file in the list
             for (int counter = repeatCount; counter > 0; counter--) {
                 // fill the progress bar
-                ShowProgressBar(0);
+                if (!bShowBuiltInTests)
+                    ShowProgressBar(0);
                 if (repeatCount > 1) {
                     tft.drawRoundRect(0, 95, tft.width() - 1, 24, 10, ILI9341_BLUE);
                     tft.setCursor(7, 100);
@@ -417,7 +417,6 @@ void ProcessFileOrTest()
                             tft.print(String(F("Repeat Seconds Left: ")) + String(nTimerSeconds));
                             tft.print(F("   "));
                             delay(1000);
-                            EventTimers.tick();
                             if (CheckCancel())
                                 break;
                             delay(10);
@@ -1074,6 +1073,7 @@ TS_Point ReadTouch()
 // see if they want to cancel
 bool CheckCancel()
 {
+    EventTimers.tick();
     static long waitForIt;
     static bool bReadyToCancel = false;
     static bool bCancelPending = false;
@@ -1230,6 +1230,7 @@ void ShowMenu(struct MenuItem* menu)
 // switch between SD and built-ins
 void ToggleFilesBuiltin(MenuItem* menu)
 {
+    int oldIndex = CurrentFileIndex;
     bool lastval = bShowBuiltInTests;
     ToggleBool(menu);
     if (lastval != bShowBuiltInTests) {
@@ -1248,6 +1249,9 @@ void ToggleFilesBuiltin(MenuItem* menu)
             GetFileNamesFromSD(currentFolder);
         }
     }
+    // restore indexes
+    CurrentFileIndex = lastFileIndex;
+    lastFileIndex = oldIndex;
 }
 
 // toggle a boolean value
@@ -1550,7 +1554,7 @@ int CompareStrings(String one, String two)
 
 void TestCylon()
 {
-    CylonBounce(255, 0, 0, nCylonEyeSize, frameHold, 50);
+    CylonBounce(nCylonEyeRed, nCylonEyeGreen, nCylonEyeBlue, nCylonEyeSize, frameHold, 50);
 }
 void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, int ReturnDelay)
 {
@@ -1713,9 +1717,24 @@ void BouncingColoredBalls(int balls, byte colors[][3]) {
         Dampening[i] = 0.90 - float(i) / pow(balls, 2);
     }
 
-    // run for 30 seconds
+    // run for allowed seconds
     long start = millis();
+    long percent;
+    //nTimerSeconds = nBouncingBallsRuntime;
+    //int lastSeconds = 0;
+    //EventTimers.every(1000L, SecondsTimer);
     while (millis() < start + ((long)nBouncingBallsRuntime * 1000)) {
+        //if (nTimerSeconds != lastSeconds) {
+        //    tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
+        //    tft.setTextSize(2);
+        //    tft.setCursor(0, 38);
+        //    char num[50];
+        //    nTimerSeconds = nTimerSeconds;
+        //    sprintf(num, "%3d seconds", nTimerSeconds);
+        //    tft.print(num);
+        //}
+        //percent = map(millis() - start, 0, nBouncingBallsRuntime * 1000, 0, 100);
+        //ShowProgressBar(percent);
         if (CheckCancel())
             return;
         for (int i = 0; i < balls; i++) {
@@ -1973,7 +1992,7 @@ bool SaveSettings(bool save, bool autoload, bool onlyCalvalues)
             char svalue[sizeof signature];
             eeprom_read_block(svalue, (void*)NULL, sizeof svalue);
             if (strncmp(svalue, signature, sizeof signature)) {
-                WriteMessage("bad eeprom signature\nSave Default to fix", true);
+                WriteMessage(String(F("bad eeprom signature\nSave Default to fix")), true);
                 return false;
             }
             eeprom_read_block(saveValueList[ix].val, blockpointer, saveValueList[ix].size);
@@ -2000,7 +2019,7 @@ bool SaveSettings(bool save, bool autoload, bool onlyCalvalues)
             CurrentFileIndex = 0;
         }
     }
-    WriteMessage(save ? "Settings Saved" : "Settings Loaded");
+    WriteMessage(String(save ? F("Settings Saved") : F("Settings Loaded")));
     return true;
 }
 

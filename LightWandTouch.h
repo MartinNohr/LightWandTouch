@@ -59,6 +59,7 @@ int nBackLightSeconds = 10;             // how long to leave the backlight on be
 volatile bool bBackLightOn = false;     // used by backlight timer to indicate that backlight is on
 volatile bool bTurnOnBacklight = true;  // set to turn the backlight on, safer than calling the BackLightControl code
 int CurrentFileIndex = 0;
+int lastFileIndex = 0;                  // save between switching of internal and SD
 int NumberOfFiles = 0;
 #define MAX_FILES 25
 String FileNames[MAX_FILES];
@@ -158,6 +159,9 @@ int nBouncingBallsDecay = 1000;
 int nBouncingBallsRuntime = 20; // in seconds
 // cylon eye
 int nCylonEyeSize = 10;
+int nCylonEyeRed = 255;
+int nCylonEyeGreen = 0;
+int nCylonEyeBlue = 0;
 
 MenuItem RepeatMenu[] = {
     {eClear,false,    ILI9341_BLACK},
@@ -220,6 +224,9 @@ MenuItem CylonEyeMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eText,false,   ILI9341_BLACK,"Cylon Eye"},
     {eTextInt,false,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
+    {eTextInt,false,ILI9341_BLACK,"Eye Red:   %d",GetIntegerValue,&nCylonEyeRed,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Eye Green: %d",GetIntegerValue,&nCylonEyeGreen,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Eye Blue:  %d",GetIntegerValue,&nCylonEyeBlue,0,255},
     {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
