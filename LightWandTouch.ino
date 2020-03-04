@@ -1230,8 +1230,8 @@ void ShowMenu(struct MenuItem* menu)
 // switch between SD and built-ins
 void ToggleFilesBuiltin(MenuItem* menu)
 {
-    int oldIndex = CurrentFileIndex;
     bool lastval = bShowBuiltInTests;
+    int oldIndex = CurrentFileIndex;
     String oldFolder = currentFolder;
     ToggleBool(menu);
     if (lastval != bShowBuiltInTests) {
@@ -1246,7 +1246,7 @@ void ToggleFilesBuiltin(MenuItem* menu)
         }
         else {
             // read the SD
-            currentFolder = "/";
+            currentFolder = lastFolder;
             GetFileNamesFromSD(currentFolder);
         }
     }
