@@ -461,6 +461,8 @@ void ProcessFileOrTest()
 // show progress bar
 void ShowProgressBar(int percent)
 {
+    if (!bShowProgress)
+        return;
     static int lastpercent;
     if (lastpercent && (lastpercent == percent))
         return;

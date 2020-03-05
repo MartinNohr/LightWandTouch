@@ -69,6 +69,7 @@ bool bReverseImage = false;             // read the file lines in reverse
 bool bMirrorPlayImage = false;          // play the file twice, 2nd time reversed
 
 bool bLongPress = false;                // set when long press on screen
+bool bShowProgress = true;              // show the progress bar
 
 struct saveValues {
     void* val;
@@ -97,6 +98,7 @@ const saveValues saveValueList[] = {
     {&bMirrorPlayImage,sizeof(bMirrorPlayImage)},
     {&nChainRepeats,sizeof(nChainRepeats)},
     {&whiteBalance,sizeof(whiteBalance)},
+    {&bShowProgress,sizeof(bShowProgress)},
 };
 
 // The menu structures
@@ -254,6 +256,7 @@ MenuItem OtherSettingsMenu[] = {
     {eTextInt,false,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
     {eTextInt,false,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
     {eTextInt,false,ILI9341_BLACK,"Backlight Timeout: %d (S)",GetIntegerValue,&nBackLightSeconds,1,1000},
+    {eBool,false,   ILI9341_BLACK,"Show Progress Bar: %s",ToggleBool,&bShowProgress,0,0,"Yes","No"},
     {eMenu,false,   ILI9341_BLACK,"Default Settings",NULL,EepromMenu},
     {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
