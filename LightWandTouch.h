@@ -113,6 +113,7 @@ enum eDisplayOperation {
     eIfEqual,           // start skipping menu entries if match with data value
     eElse,              // toggles the skipping
     eEndif,             // ends an if block
+    eInternalMenu,      // use an internal settings menu if available, see the internal name,function list below (BuiltInFiles[])
     eTerminate,         // must be last in a menu
 };
 struct MenuItem {
@@ -215,7 +216,6 @@ MenuItem WandMenu[] = {
 };
 MenuItem BouncingBallsMenu[] = {
     {eClear,false,  ILI9341_BLACK},
-    {eText,false,   ILI9341_BLACK,"Bouncing Balls"},
     {eTextInt,false,ILI9341_BLACK,"Ball Count (1-8): %d",GetIntegerValue,&nBouncingBallsCount,1,8},
     {eTextInt,false,ILI9341_BLACK,"Decay (500-10000): %d",GetIntegerValue,&nBouncingBallsDecay,500,10000},
     {eTextInt,false,ILI9341_BLACK,"Runtime (seconds): %d",GetIntegerValue,&nBouncingBallsRuntime,1,10000},
@@ -225,7 +225,6 @@ MenuItem BouncingBallsMenu[] = {
 };
 MenuItem CylonEyeMenu[] = {
     {eClear,false,  ILI9341_BLACK},
-    {eText,false,   ILI9341_BLACK,"Cylon Eye"},
     {eTextInt,false,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
     {eTextInt,false,ILI9341_BLACK,"Eye Red:   %d",GetIntegerValue,&nCylonEyeRed,0,255},
     {eTextInt,false,ILI9341_BLACK,"Eye Green: %d",GetIntegerValue,&nCylonEyeGreen,0,255},
@@ -234,14 +233,14 @@ MenuItem CylonEyeMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem InternalFileSettings[] = {
-    {eClear,false,  ILI9341_BLACK},
-    {eMenu,false,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
-    {eMenu,false,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
-    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
-    // make sure this one is last
-    {eTerminate}
-};
+//MenuItem InternalFileSettings[] = {
+//    {eClear,false,  ILI9341_BLACK},
+//    {eMenu,false,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
+//    {eMenu,false,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
+//    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
+//    // make sure this one is last
+//    {eTerminate}
+//};
 MenuItem EepromMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eBool,false,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
@@ -281,6 +280,14 @@ MenuItem StartFileMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
+// built-in "files"
+struct BuiltInItem {
+    char* text;
+    void(*function)();
+    MenuItem* menu;     // not used yet, but might be used to set the correct menu
+};
+typedef BuiltInItem BuiltInItem;
+extern BuiltInItem BuiltInFiles[];
 MenuItem MainMenu[] = {
     {eClear,false,    ILI9341_BLACK},
     {eText,false,     ILI9341_BLACK,"Choose File",EnterFileName},
@@ -292,7 +299,8 @@ MenuItem MainMenu[] = {
     {eMenu,false,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,false,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,true},
-        {eMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
+        {eInternalMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,BuiltInFiles},
+        //{eMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
     {eElse},
         {eMenu,false,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
     {eEndif},
@@ -305,19 +313,12 @@ MenuItem MainMenu[] = {
 MenuItem* menustack[10];
 int menuLevel = 0;
 
-// built-in "files"
-struct BuiltInItem {
-    char* text;
-    void(*function)();
-    MenuItem* menu;     // not used yet, but might be used to set the correct menu
-};
-typedef BuiltInItem BuiltInItem;
 BuiltInItem BuiltInFiles[] = {
     {"Running Dot",RunningDot},
     {"2 Running Dots",OppositeRunningDots},
     {"Barber Pole",BarberPole},
     {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
-    {"Cylon Eye",TestCylon},
+    {"Cylon Eye",TestCylon,CylonEyeMenu},
     {"Meteor",TestMeteor},
     {"CheckerBoard",CheckerBoard},
     {"Random Bars",RandomBars},

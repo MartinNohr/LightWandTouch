@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(F(" Light Wand Touch"));
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println(F("       Version 2.0"));
+    tft.println(F("       Version 2.1"));
     tft.println(F("       Martin Nohr"));
     setupSDcard();
     WriteMessage(F("Testing LED Strip"), false, 10);
@@ -308,6 +308,16 @@ void loop()
             case eMenu:
                 ++menuLevel;
                 menustack[menuLevel] = (MenuItem*)(menustack[menuLevel - 1][ix].value);
+                bMenuChanged = true;
+                break;
+            case eInternalMenu: // find it in builtins
+                if (BuiltInFiles[CurrentFileIndex].menu != NULL) {
+                    ++menuLevel;
+                    menustack[menuLevel] = (MenuItem*)(BuiltInFiles[CurrentFileIndex].menu);
+                }
+                else {
+                    WriteMessage(String(F("No settings available for:\n"))+String(BuiltInFiles[CurrentFileIndex].text));
+                }
                 bMenuChanged = true;
                 break;
             case eExit: // go back a level
@@ -1214,6 +1224,7 @@ void ShowMenu(struct MenuItem* menu)
                 tft.print(menu->text);
             }
             break;
+        case eInternalMenu:
         case eMenu:
         case eExit:
             menu->valid = true;
