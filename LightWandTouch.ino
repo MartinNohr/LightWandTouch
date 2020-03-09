@@ -274,7 +274,7 @@ void loop()
     //Serial.println(")");
     // see if one of the go buttons
     delay(100);
-    if ((RangeTest(p.x, tft.width() - 40, 30) && RangeTest(p.y, tft.height() - 16, 25))) {
+    if ((RangeTest(p.x, tft.width() - 30, 29) && RangeTest(p.y, tft.height() - 30, 29))) {
         //Serial.println("GO...");
         ProcessFileOrTest();
         bMenuChanged = true;
@@ -310,7 +310,7 @@ void loop()
                 menustack[menuLevel] = (MenuItem*)(menustack[menuLevel - 1][ix].value);
                 bMenuChanged = true;
                 break;
-            case eInternalMenu: // find it in builtins
+            case eBuiltinOptions: // find it in builtins
                 if (BuiltInFiles[CurrentFileIndex].menu != NULL) {
                     ++menuLevel;
                     menustack[menuLevel] = (MenuItem*)(BuiltInFiles[CurrentFileIndex].menu);
@@ -1027,9 +1027,9 @@ void ShowGo()
     tft.setCursor(0, 0);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
     tft.print((bShowBuiltInTests ? String("*") : currentFolder) + FileNames[CurrentFileIndex].substring(0, FileNames[CurrentFileIndex].lastIndexOf(".")) + " " + String(CurrentFileIndex + 1) + "/" + String(NumberOfFiles));
-    tft.fillRoundRect(tft.width() - 52, tft.height() - 52, 49, 49, 10, ILI9341_BLUE);
-    tft.fillRoundRect(tft.width() - 50, tft.height() - 50, 45, 45, 10, ILI9341_DARKGREEN);
-    tft.setCursor(tft.width() - 40, tft.height() - 34);
+    tft.fillRoundRect(tft.width() - 49, tft.height() - 49, 49, 49, 10, ILI9341_BLUE);
+    tft.fillRoundRect(tft.width() - 47, tft.height() - 47, 45, 45, 10, ILI9341_DARKGREEN);
+    tft.setCursor(tft.width() - 37, tft.height() - 31);
     tft.setTextColor(ILI9341_WHITE, ILI9341_DARKGREEN);
     tft.print("GO");
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -1183,6 +1183,7 @@ void ShowMenu(struct MenuItem* menu)
             menu->valid = false;
             continue;
         }
+        char line[100];
         // only displayable menu items should be in this switch
         switch (menu->op) {
         case eTextInt:
@@ -1216,7 +1217,6 @@ void ShowMenu(struct MenuItem* menu)
             tft.setTextColor(ILI9341_WHITE, menu->back_color);
             tft.setCursor(x, y);
             if (menu->value) {
-                char line[100];
                 sprintf(line, menu->text, *(bool*)menu->value ? menu->on : menu->off);
                 tft.print(line);
             }
@@ -1224,7 +1224,18 @@ void ShowMenu(struct MenuItem* menu)
                 tft.print(menu->text);
             }
             break;
-        case eInternalMenu:
+        case eBuiltinOptions:
+            // for builtins only show if available
+            if (BuiltInFiles[CurrentFileIndex].menu != NULL) {
+                menu->valid = true;
+                y += LINEHEIGHT;
+                tft.setTextColor(ILI9341_WHITE, menu->back_color);
+                tft.setCursor(x, y);
+                tft.print("+");
+                sprintf(line, menu->text, BuiltInFiles[CurrentFileIndex].text);
+                tft.print(line);
+            }
+            break;
         case eMenu:
         case eExit:
             menu->valid = true;
@@ -1604,7 +1615,7 @@ void CylonBounce(byte red, byte green, byte blue, int EyeSize, int SpeedDelay, i
 }
 
 void TestMeteor() {
-    meteorRain(255, 255, 255, 10, 64, true, 30);
+    meteorRain(nMeteorRed, nMeteorGreen, nMeteorBlue, nMeteorSize, 64, true, 30);
 }
 
 void meteorRain(byte red, byte green, byte blue, byte meteorSize, byte meteorTrailDecay, boolean meteorRandomDecay, int SpeedDelay) {
@@ -1857,21 +1868,26 @@ void CheckerBoard()
     }
 }
 
-// show random bars of lights with blacks between, 50 times
 void RandomBars()
+{
+    ShowRandomBars(bRandomBarsBlacks, nRandomBarsCount);
+}
+
+// show random bars of lights with blacks between, 50 times
+void ShowRandomBars(bool blacks, int howmany)
 {
     byte r, g, b;
     srand(millis());
-    char line[] = "                ";
+    //char line[] = "                ";
     //    lcd.setCursor(0, 1);
     //    lcd.write(line, 16);
-    for (int pass = 0; pass < 50; ++pass) {
+    for (int pass = 0; pass < howmany; ++pass) {
         if (CheckCancel())
             return;
-        sprintf(line, "%2d/50", pass + 1);
+        //sprintf(line, "%2d/50", pass + 1);
         //lcd.setCursor(10, 0);
         //lcd.print(line);
-        if (pass % 2) {
+        if (blacks && (pass % 2)) {
             // odd numbers, clear
             FastLED.clear();
         }
@@ -1886,34 +1902,6 @@ void RandomBars()
             for (int ix = 0; ix < stripLength; ++ix) {
                 leds[ix] = CRGB(r, g, b);
             }
-        }
-        FastLED.show();
-        delay(frameHold);
-    }
-}
-
-// show random bars of lights, 50 times
-void RandomColors()
-{
-    byte r, g, b;
-    srand(millis());
-    char line[] = "                ";
-    //    lcd.setCursor(0, 1);
-    //    lcd.write(line, 16);
-    for (int pass = 0; pass < 50; ++pass) {
-        if (CheckCancel())
-            return;
-        sprintf(line, "%2d/50", pass + 1);
-        //lcd.setCursor(10, 0);
-        //lcd.print(line);
-        r = random(0, 255);
-        g = random(0, 255);
-        b = random(0, 255);
-        fixRGBwithGamma(&r, &g, &b);
-        // fill the strip color
-        //strip.fill(strip.Color(r, g, b), 0, stripLength);
-        for (int ix = 0; ix < stripLength; ++ix) {
-            leds[ix] = CRGB(r, g, b);
         }
         FastLED.show();
         delay(frameHold);

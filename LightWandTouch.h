@@ -113,7 +113,7 @@ enum eDisplayOperation {
     eIfEqual,           // start skipping menu entries if match with data value
     eElse,              // toggles the skipping
     eEndif,             // ends an if block
-    eInternalMenu,      // use an internal settings menu if available, see the internal name,function list below (BuiltInFiles[])
+    eBuiltinOptions,    // use an internal settings menu if available, see the internal name,function list below (BuiltInFiles[])
     eTerminate,         // must be last in a menu
 };
 struct MenuItem {
@@ -154,7 +154,6 @@ void BarberPole();
 void OppositeRunningDots();
 void CheckerBoard();
 void RandomBars();
-void RandomColors();
 void TestTwinkle();
 
 // adjustment values
@@ -166,6 +165,14 @@ int nCylonEyeSize = 10;
 int nCylonEyeRed = 255;
 int nCylonEyeGreen = 0;
 int nCylonEyeBlue = 0;
+// random bars
+bool bRandomBarsBlacks = true;
+int nRandomBarsCount = 100;
+// meteor
+int nMeteorSize = 10;
+int nMeteorRed = 255;
+int nMeteorGreen = 255;
+int nMeteorBlue = 255;
 
 MenuItem RepeatMenu[] = {
     {eClear,false,    ILI9341_BLACK},
@@ -225,7 +232,7 @@ MenuItem BouncingBallsMenu[] = {
 };
 MenuItem CylonEyeMenu[] = {
     {eClear,false,  ILI9341_BLACK},
-    {eTextInt,false,ILI9341_BLACK,"Eye Size: %d",GetIntegerValue,&nCylonEyeSize,1,100},
+    {eTextInt,false,ILI9341_BLACK,"Eye Size:  %d",GetIntegerValue,&nCylonEyeSize,1,100},
     {eTextInt,false,ILI9341_BLACK,"Eye Red:   %d",GetIntegerValue,&nCylonEyeRed,0,255},
     {eTextInt,false,ILI9341_BLACK,"Eye Green: %d",GetIntegerValue,&nCylonEyeGreen,0,255},
     {eTextInt,false,ILI9341_BLACK,"Eye Blue:  %d",GetIntegerValue,&nCylonEyeBlue,0,255},
@@ -233,14 +240,24 @@ MenuItem CylonEyeMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-//MenuItem InternalFileSettings[] = {
-//    {eClear,false,  ILI9341_BLACK},
-//    {eMenu,false,   ILI9341_BLACK,"Bouncing Balls",NULL,BouncingBallsMenu},
-//    {eMenu,false,   ILI9341_BLACK,"Cylon Eye",NULL,CylonEyeMenu},
-//    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
-//    // make sure this one is last
-//    {eTerminate}
-//};
+MenuItem MeteorMenu[] = {
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Meteor Size:  %d",GetIntegerValue,&nMeteorSize,1,100},
+    {eTextInt,false,ILI9341_BLACK,"Meteor Red:   %d",GetIntegerValue,&nMeteorRed,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Meteor Green: %d",GetIntegerValue,&nMeteorGreen,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Meteor Blue:  %d",GetIntegerValue,&nMeteorBlue,0,255},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
+MenuItem RandomBarsMenu[] = {
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Bar count: %d",GetIntegerValue,&nRandomBarsCount,1,5000},
+    {eBool,false,   ILI9341_BLACK,"Alternating Blacks: %s",ToggleBool,&bRandomBarsBlacks,0,0,"Yes","No"},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
 MenuItem EepromMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eBool,false,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
@@ -299,8 +316,7 @@ MenuItem MainMenu[] = {
     {eMenu,false,     ILI9341_BLACK,"Wand Settings",NULL,WandMenu},
     {eMenu,false,     ILI9341_BLACK,"Repeat Settings",NULL,RepeatMenu},
     {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,true},
-        {eInternalMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,BuiltInFiles},
-        //{eMenu,false,     ILI9341_BLACK,"Built-ins Settings",NULL,InternalFileSettings},
+        {eBuiltinOptions,false,     ILI9341_BLACK,"%s Options",NULL,BuiltInFiles},
     {eElse},
         {eMenu,false,     ILI9341_BLACK,"LWC File Operations",NULL,StartFileMenu},
     {eEndif},
@@ -314,16 +330,15 @@ MenuItem* menustack[10];
 int menuLevel = 0;
 
 BuiltInItem BuiltInFiles[] = {
-    {"Running Dot",RunningDot},
-    {"2 Running Dots",OppositeRunningDots},
     {"Barber Pole",BarberPole},
-    {"Bouncing Balls",TestBouncingBalls,BouncingBallsMenu},
+    {"Bouncy Balls",TestBouncingBalls,BouncingBallsMenu},
     {"Cylon Eye",TestCylon,CylonEyeMenu},
-    {"Meteor",TestMeteor},
+    {"Random Bars",RandomBars,RandomBarsMenu},
     {"CheckerBoard",CheckerBoard},
-    {"Random Bars",RandomBars},
-    {"Random Colors",RandomColors},
+    {"One Dot",RunningDot},
+    {"Two Dots",OppositeRunningDots},
     {"Twinkle",TestTwinkle},
+    {"Meteor",TestMeteor,MeteorMenu},
 };
 
 // timers to run things
