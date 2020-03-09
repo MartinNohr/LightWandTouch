@@ -122,7 +122,7 @@ struct MenuItem {
     int back_color;
     char* text;
     void(*function)(MenuItem*);
-    void* value;
+    const void* value;
     long min;       // also used for ifequal
     long max;       // size to compare for if
     char* on;       // text for boolean
