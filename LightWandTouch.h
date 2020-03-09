@@ -174,7 +174,7 @@ int nMeteorRed = 255;
 int nMeteorGreen = 255;
 int nMeteorBlue = 255;
 
-MenuItem RepeatMenu[] = {
+const MenuItem RepeatMenu[] = {
     {eClear,false,    ILI9341_BLACK},
     {eTextInt,false,  ILI9341_BLACK,"Repeat Count: %d",GetIntegerValue,&repeatCount,1,1000},
     {eTextInt,false,  ILI9341_BLACK,"Repeat Delay: %d",GetIntegerValue,&repeatDelay,0,1000},
@@ -188,7 +188,7 @@ MenuItem RepeatMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem WandColorMenu[] = {
+const MenuItem WandColorMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eBool,false,   ILI9341_BLACK,"Gamma Correction: %s",ToggleBool,&bGammaCorrection,0,0,"On","Off"},
     {eTextInt,false,ILI9341_BLACK,"White Balance R: %3d",GetIntegerValue,&whiteBalance.r,0,255},
@@ -199,7 +199,7 @@ MenuItem WandColorMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem WandMoreMenu[] = {
+const MenuItem WandMoreMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Pixel Count: %d",GetIntegerValue,&stripLength,1,288},
     {eBool,false,   ILI9341_BLACK,"Scale Height to Fit: %s",ToggleBool,&bScaleHeight,0,0,"On","Off"},
@@ -210,7 +210,7 @@ MenuItem WandMoreMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem WandMenu[] = {
+const MenuItem WandMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Frame Hold Time: %d mSec",GetIntegerValue,&frameHold,0,10000},
     {eTextInt,false,ILI9341_BLACK,"Start Delay (Sec): %d",GetIntegerValue,&startDelay,0,1000},
@@ -221,7 +221,7 @@ MenuItem WandMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem BouncingBallsMenu[] = {
+const MenuItem BouncingBallsMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Ball Count (1-8): %d",GetIntegerValue,&nBouncingBallsCount,1,8},
     {eTextInt,false,ILI9341_BLACK,"Decay (500-10000): %d",GetIntegerValue,&nBouncingBallsDecay,500,10000},
@@ -230,7 +230,7 @@ MenuItem BouncingBallsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem CylonEyeMenu[] = {
+const MenuItem CylonEyeMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Eye Size:  %d",GetIntegerValue,&nCylonEyeSize,1,100},
     {eTextInt,false,ILI9341_BLACK,"Eye Red:   %d",GetIntegerValue,&nCylonEyeRed,0,255},
@@ -240,7 +240,7 @@ MenuItem CylonEyeMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem MeteorMenu[] = {
+const MenuItem MeteorMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Meteor Size:  %d",GetIntegerValue,&nMeteorSize,1,100},
     {eTextInt,false,ILI9341_BLACK,"Meteor Red:   %d",GetIntegerValue,&nMeteorRed,0,255},
@@ -250,7 +250,7 @@ MenuItem MeteorMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem RandomBarsMenu[] = {
+const MenuItem RandomBarsMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Bar count: %d",GetIntegerValue,&nRandomBarsCount,1,5000},
     {eBool,false,   ILI9341_BLACK,"Alternating Blacks: %s",ToggleBool,&bRandomBarsBlacks,0,0,"Yes","No"},
@@ -258,7 +258,7 @@ MenuItem RandomBarsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem EepromMenu[] = {
+const MenuItem EepromMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eBool,false,   ILI9341_BLACK,"Autoload Defaults: %s",ToggleBool,&bAutoLoadSettings,0,0,"On","Off"},
     {eText,false,   ILI9341_BLACK,"Save Default Settings",SaveEepromSettings},
@@ -267,7 +267,7 @@ MenuItem EepromMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem OtherSettingsMenu[] = {
+const MenuItem OtherSettingsMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextInt,false,ILI9341_BLACK,"Max Display Bright: %d%%",GetIntegerValue,&nMaxBackLight,1,100},
     {eTextInt,false,ILI9341_BLACK,"Min Display Bright: %d%%",GetIntegerValue,&nMinBackLight,5,100},
@@ -278,7 +278,7 @@ MenuItem OtherSettingsMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem AssociatedFileMenu[] = {
+const MenuItem AssociatedFileMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eTextCurrentFile,false,   ILI9341_BLACK,"Erase %s.LWC",EraseAssociatedFile},
     {eTextCurrentFile,false,   ILI9341_BLACK,"Save  %s.LWC",SaveAssociatedFile},
@@ -287,7 +287,7 @@ MenuItem AssociatedFileMenu[] = {
     // make sure this one is last
     {eTerminate}
 };
-MenuItem StartFileMenu[] = {
+const MenuItem StartFileMenu[] = {
     {eClear,false,  ILI9341_BLACK},
     {eText,false,   ILI9341_BLACK,"Erase START.LWC",EraseStartFile},
     {eText,false,   ILI9341_BLACK,"Save  START.LWC",SaveStartFile},
@@ -305,7 +305,7 @@ struct BuiltInItem {
 };
 typedef BuiltInItem BuiltInItem;
 extern BuiltInItem BuiltInFiles[];
-MenuItem MainMenu[] = {
+const MenuItem MainMenu[] = {
     {eClear,false,    ILI9341_BLACK},
     {eText,false,     ILI9341_BLACK,"Choose File",EnterFileName},
     {eIfEqual,false,  ILI9341_BLACK,"",NULL,&bShowBuiltInTests,true},
