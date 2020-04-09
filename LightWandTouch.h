@@ -37,7 +37,7 @@ int CurrentFileIndex = 0;
 int lastFileIndex = 0;                  // save between switching of internal and SD
 String lastFolder = "/";
 int NumberOfFiles = 0;
-#define MAX_FILES 25
+#define MAX_FILES 20
 String FileNames[MAX_FILES];
 SdFat SD;
 char signature[]{ "MLW00" };              // set to make sure saved values are valid, change when savevalues is changed
@@ -155,6 +155,7 @@ void OppositeRunningDots();
 void CheckerBoard();
 void RandomBars();
 void TestTwinkle();
+void DisplayAllColor();
 
 // adjustment values
 int nBouncingBallsCount = 4;
@@ -173,6 +174,10 @@ int nMeteorSize = 10;
 int nMeteorRed = 255;
 int nMeteorGreen = 255;
 int nMeteorBlue = 255;
+// display all color
+int nDisplayAllRed = 255;
+int nDisplayAllGreen = 255;
+int nDisplayAllBlue = 255;
 
 const MenuItem RepeatMenu[] = {
     {eClear,false,    ILI9341_BLACK},
@@ -246,6 +251,15 @@ const MenuItem MeteorMenu[] = {
     {eTextInt,false,ILI9341_BLACK,"Meteor Red:   %d",GetIntegerValue,&nMeteorRed,0,255},
     {eTextInt,false,ILI9341_BLACK,"Meteor Green: %d",GetIntegerValue,&nMeteorGreen,0,255},
     {eTextInt,false,ILI9341_BLACK,"Meteor Blue:  %d",GetIntegerValue,&nMeteorBlue,0,255},
+    {eExit,false,   ILI9341_BLACK,"Previous Menu"},
+    // make sure this one is last
+    {eTerminate}
+};
+const MenuItem DisplayAllColorMenu[] = {
+    {eClear,false,  ILI9341_BLACK},
+    {eTextInt,false,ILI9341_BLACK,"Red:   %d",GetIntegerValue,&nDisplayAllRed,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Green: %d",GetIntegerValue,&nDisplayAllGreen,0,255},
+    {eTextInt,false,ILI9341_BLACK,"Blue:  %d",GetIntegerValue,&nDisplayAllBlue,0,255},
     {eExit,false,   ILI9341_BLACK,"Previous Menu"},
     // make sure this one is last
     {eTerminate}
@@ -335,6 +349,7 @@ BuiltInItem BuiltInFiles[] = {
     {"Cylon Eye",TestCylon,CylonEyeMenu},
     {"Random Bars",RandomBars,RandomBarsMenu},
     {"CheckerBoard",CheckerBoard},
+    {"Solid Color",DisplayAllColor,DisplayAllColorMenu},
     {"One Dot",RunningDot},
     {"Two Dots",OppositeRunningDots},
     {"Twinkle",TestTwinkle},

@@ -139,7 +139,7 @@ void setup(void) {
     tft.println(F(" Light Wand Touch"));
     tft.setTextSize(2);
     tft.println("\n");
-    tft.println(F("       Version 2.1"));
+    tft.println(F("       Version 2.2"));
     tft.println(F("       Martin Nohr"));
     setupSDcard();
     WriteMessage(F("Testing LED Strip"), false, 10);
@@ -354,7 +354,6 @@ void ProcessFileOrTest()
         nTimerSeconds = startDelay;
         EventTimers.every(1000L, SecondsTimer);
         while (nTimerSeconds) {
-            bTurnOnBacklight = true;
             //Serial.println("timer " + String(nTimerSeconds));
             tft.setCursor(0, 75);
             tft.setTextSize(2);
@@ -412,7 +411,8 @@ void ProcessFileOrTest()
                 if (bCancelRun) {
                     break;
                 }
-                ShowProgressBar(0);
+                if (!bShowBuiltInTests)
+                    ShowProgressBar(0);
                 if (counter > 1) {
                     if (repeatDelay) {
                         FastLED.clear(true);
@@ -420,7 +420,6 @@ void ProcessFileOrTest()
                         nTimerSeconds = repeatDelay;
                         EventTimers.every(1000L, SecondsTimer);
                         while (nTimerSeconds) {
-                            bTurnOnBacklight = true;
                             tft.setCursor(0, 75);
                             tft.setTextSize(2);
                             tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -1090,6 +1089,8 @@ bool CheckCancel()
     static bool bReadyToCancel = false;
     static bool bCancelPending = false;
     bool retflag = false;
+    // keep the light on while doing this
+    bTurnOnBacklight = true;
     if (bCancelPending && !bReadyToCancel) {
         bReadyToCancel = true;
         waitForIt = millis();
@@ -1905,6 +1906,17 @@ void ShowRandomBars(bool blacks, int howmany)
         }
         FastLED.show();
         delay(frameHold);
+    }
+}
+
+// show all in a color
+void DisplayAllColor()
+{
+    FastLED.showColor(CRGB(nDisplayAllRed, nDisplayAllGreen, nDisplayAllBlue));
+    // just show until cancelled
+    while (true) {
+        if (CheckCancel())
+            return;
     }
 }
 
