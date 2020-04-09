@@ -1303,7 +1303,8 @@ void GetIntegerValue(MenuItem* menu)
 void EnterFileName(MenuItem* menu)
 {
     bool done = false;
-    int startindex = 0;
+    // try and show the same page we were on
+    int startindex = CurrentFileIndex / 5 * 5;
     tft.setTextSize(3);
     tft.fillScreen(ILI9341_BLACK);
     TS_Point p;
